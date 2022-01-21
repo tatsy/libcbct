@@ -62,12 +62,7 @@ int main(int argc, char **argv) {
     const int sizeZ = 256;
     const float voxelSize = (detWidth * pixelSizeX) * sod / sdd / sizeX;
 
-    std::vector<cv::Mat> res(sizeZ);
-
-    OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
-        res[z] = cv::Mat::zeros(sizeY, sizeX, CV_32F);
-    }
-
+    FloatVolume out(sizeX, sizeY, sizeZ);
     std::atomic<float> maxVal(-(float)FLT_MAX);
 
     LIBCBCT_INFO("Back-projecting...");
@@ -90,12 +85,12 @@ int main(int argc, char **argv) {
                     const float iv = v / pixelSizeY + detHeight / 2;
 
                     if (iu >= 0.0 && iv >= 0.0 && iu < detWidth - 1 && iv < detHeight - 1) {
-                        res[z].at<float>(y, x) += sinogram(iu, iv, i);
+                        out(x, y, z) += sinogram(iu, iv, i);
                     }
                 }
-                res[z].at<float>(y, x) /= N;
+                out(x, y, z) /= N;
 
-                maxVal.store(std::max(maxVal.load(), res[z].at<float>(y, x)));
+                maxVal.store(std::max(maxVal.load(), out(x, y, z)));
             }
         }
         pbar.step();
@@ -103,7 +98,11 @@ int main(int argc, char **argv) {
 
     printf("maxVal = %f\n", maxVal.load());
     OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
-        res[z] /= maxVal;
+        for (int y = 0; y < sizeY; y++) {
+            for (int x = 0; x < sizeX; x++) {
+                out(x, y, z) /= maxVal;
+            }
+        }
     }
 
     std::ofstream writer("output.raw", std::ios::out | std::ios::binary);
@@ -111,14 +110,15 @@ int main(int argc, char **argv) {
     for (int z = 0; z < sizeZ; z++) {
         for (int y = 0; y < sizeY; y++) {
             for (int x = 0; x < sizeX; x++) {
-                buffer[x] = res[z].at<float>(y, x);
+                buffer[x] = out(x, y, z);
             }
             writer.write((char *)buffer, sizeof(float) * sizeX);
         }
     }
     writer.close();
 
-    cv::imshow("res", res[sizeZ / 2]);
+    cv::Mat slice(sizeY, sizeX, CV_32F, out.ptr() + (sizeX * sizeY * sizeZ / 2));
+    cv::imshow("center slice", slice);
     cv::waitKey(0);
     cv::destroyAllWindows();
 }
