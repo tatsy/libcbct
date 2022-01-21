@@ -1,5 +1,6 @@
 target_sources(
   ${LIBCBCT}
   PRIVATE
-  api.h
-  logging.h)
+  Api.h
+  Logging.h
+  OpenMP.h)

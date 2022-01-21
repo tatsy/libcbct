@@ -2,7 +2,10 @@ if (BUILD_STATIC_LIBS)
   add_library(${LIBCBCT} STATIC)
 else()
   add_library(${LIBCBCT} SHARED)
-  target_link_libraries(${LIBCBCT} ${OpenCV_LIBS})
+  target_link_libraries(
+    ${LIBCBCT}
+    ${OpenCV_LIBS}
+    ${OpenMP_libomp_LIBRARY})
 endif()
 
 add_subdirectory(Common)
@@ -17,7 +20,10 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS})
 
 add_executable(${LIBCBCT_EXE} main.cpp)
-target_link_libraries(${LIBCBCT_EXE} ${OpenCV_LIBS})
+target_link_libraries(
+  ${LIBCBCT_EXE}
+  ${OpenCV_LIBS}
+  ${OpenMP_libomp_LIBRARY})
 set_property(TARGET ${BUILD_TARGET} PROPERTY DEBUG_POSTFIX "-debug")
 
 if (MSVC)

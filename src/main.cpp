@@ -1,6 +1,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 #include <vector>
 #include <atomic>
@@ -65,7 +66,7 @@ int main(int argc, char **argv) {
     std::vector<cv::Mat> res(sizeZ);
 
     OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
-        res[z] =  cv::Mat::zeros(sizeY, sizeX, CV_32F);
+        res[z] = cv::Mat::zeros(sizeY, sizeX, CV_32F);
     }
 
     std::atomic<float> maxVal(-(float)FLT_MAX);
@@ -73,11 +74,12 @@ int main(int argc, char **argv) {
     OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
         for (int y = 0; y < sizeY; y++) {
             for (int x = 0; x < sizeX; x++) {
-                for (int i = 0; i < N; i++) {                
+                for (int i = 0; i < N; i++) {
                     const float theta = 2.0 * M_PI * i / N;
                     const float cosTheta = std::cos(theta);
                     const float sinTheta = std::sin(theta);
-                    const float vx = sod + voxelSize * (x - sizeX / 2) * cosTheta - voxelSize * (y - sizeY / 2) * sinTheta;
+                    const float vx =
+                        sod + voxelSize * (x - sizeX / 2) * cosTheta - voxelSize * (y - sizeY / 2) * sinTheta;
                     const float vy = voxelSize * (x - sizeX / 2) * sinTheta + voxelSize * (y - sizeY / 2) * cosTheta;
                     const float vz = voxelSize * (z - sizeZ / 2);
 
