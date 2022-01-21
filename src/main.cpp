@@ -5,7 +5,7 @@
 #include <vector>
 #include <atomic>
 
-#include "Common/openmp.h"
+#include "Common/OpenMP.h"
 
 #include <opencv2/opencv.hpp>
 

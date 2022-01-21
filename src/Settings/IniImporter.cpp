@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "Common/logging.h"
+#include "Common/Logging.h"
 
 void IniImporter::read(const std::string &filename) {
     std::ifstream reader(filename, std::ios::in);
