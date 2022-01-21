@@ -21,6 +21,7 @@ if (MSVC)
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")  # enable debugging
   add_definitions("-D_CRT_SECURE_NO_WARNINGS -DNOMINMAX")
 else()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-security")
   set(CMAKE_CXX_FLAGS_RELEASE "-g -O2")  # enable debugging
 endif()
 

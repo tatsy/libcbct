@@ -5,6 +5,8 @@
 #ifndef LIBCBCT_VOLUME_H
 #define LIBCBCT_VOLUME_H
 
+#include <cstring>
+
 #include "Common/Logging.h"
 
 template <typename T>
@@ -38,7 +40,7 @@ public:
     }
 
     Volume &operator=(const Volume<T> &other) {
-        sizeX = other.sizeX;        
+        sizeX = other.sizeX;
         sizeY = other.sizeY;
         sizeZ = other.sizeZ;
         this->alloc();
@@ -51,7 +53,7 @@ public:
         sizeY = other.sizeY;
         sizeZ = other.sizeZ;
         data = other.data;
-        
+
         other.sizeX = 0;
         other.sizeY = 0;
         other.sizeZ = 0;
@@ -61,12 +63,14 @@ public:
     }
 
     T &operator()(int x, int y, int z) {
-        LIBCBCT_ASSERT(x >= 0 && x < sizeX && y >= 0 && y < sizeY && z >= 0 && z < sizeZ, "Volume index out of bounds!");
+        LIBCBCT_ASSERT(x >= 0 && x < sizeX && y >= 0 && y < sizeY && z >= 0 && z < sizeZ,
+                       "Volume index out of bounds!");
         return data[((uint64_t)z * sizeY + (uint64_t)y) * sizeX + (uint64_t)x];
     }
 
     T operator()(int x, int y, int z) const {
-        LIBCBCT_ASSERT(x >= 0 && x < sizeX && y >= 0 && y < sizeY && z >= 0 && z < sizeZ, "Volume index out of bounds!");
+        LIBCBCT_ASSERT(x >= 0 && x < sizeX && y >= 0 && y < sizeY && z >= 0 && z < sizeZ,
+                       "Volume index out of bounds!");
         return data[((uint64_t)z * sizeY + (uint64_t)y) * sizeX + (uint64_t)x];
     }
 
@@ -74,22 +78,10 @@ public:
         return data;
     }
 
-    template <int D>
-    uint64_t size() const;
-
-    template <>
-    uint64_t size<0>() const {
-        return sizeX;
-    }
-
-    template <>
-    uint64_t size<1>() const {
-        return sizeY;
-    }
-
-    template <>
-    uint64_t size<2>() const {
-        return sizeZ;
+    template <int Dim>
+    typename std::enable_if<Dim >= 0 && Dim <= 2, uint64_t>::type
+    size() const {
+        return sizes_[Dim];
     }
 
 private:
@@ -104,7 +96,12 @@ private:
         }
     }
 
-    uint64_t sizeX, sizeY, sizeZ;
+    union {
+        struct {
+            uint64_t sizeX, sizeY, sizeZ;
+        };
+        uint64_t sizes_[3];
+    };
     T *data = NULL;
 };
 
