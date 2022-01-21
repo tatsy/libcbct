@@ -1,0 +1,8 @@
+{
+    "cmake.configureArgs": [
+        "-DOpenCV_DIR=C:/Libraries/opencv/build/install"
+    ],
+    "[cpp]": {
+        "editor.formatOnSave": true,
+    }
+}
