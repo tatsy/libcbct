@@ -5,9 +5,7 @@
 #include <vector>
 #include <atomic>
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+#include "Common/openmp.h"
 
 #include <opencv2/opencv.hpp>
 
@@ -24,8 +22,7 @@ int main(int argc, char **argv) {
     printf("SDD: %f\n", sdd);
 
     std::vector<cv::Mat> sinogram(N);
-    #pragma omp parallel for
-    for (int i = 0; i < N; i++) {
+    OMP_PARALLEL_FOR(int i = 0; i < N; i++) {
         char filename[256];
         sprintf(filename, "./data/amazon_cast/ScatterCorrect%05d.tif", i + 1);
         cv::Mat image = cv::imread(filename, cv::IMREAD_UNCHANGED);
@@ -67,15 +64,13 @@ int main(int argc, char **argv) {
 
     std::vector<cv::Mat> res(sizeZ);
 
-    #pragma omp parallel for
-    for (int z = 0; z < sizeZ; z++) {
+    OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
         res[z] =  cv::Mat::zeros(sizeY, sizeX, CV_32F);
     }
 
     std::atomic<float> maxVal(-(float)FLT_MAX);
 
-    #pragma omp parallel for
-    for (int z = 0; z < sizeZ; z++) {
+    OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
         for (int y = 0; y < sizeY; y++) {
             for (int x = 0; x < sizeX; x++) {
                 for (int i = 0; i < N; i++) {                
@@ -103,10 +98,8 @@ int main(int argc, char **argv) {
     }
 
     printf("maxVal = %f\n", maxVal.load());
-    #pragma omp parallel for
-    for (int z = 0; z < sizeZ; z++) {
+    OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
         res[z] /= maxVal;
-        break;
     }
 
     std::ofstream writer("output.raw", std::ios::out | std::ios::binary);
