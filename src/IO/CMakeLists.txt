@@ -2,4 +2,5 @@ target_sources(
   ${LIBCBCT}
   PRIVATE
   BaseImporter.h
-  ImageSequenceIO.h)
+  ImageSequenceImporter.cpp
+  ImageSequenceImporter.h)

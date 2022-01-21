@@ -5,7 +5,6 @@
 #ifndef LIBCBCT_INI_IMPORTER_H
 #define LIBCBCT_INI_IMPORTER_H
 
-#include "Common/Api.h"
 #include "SettingsImporterBase.h"
 
 /**

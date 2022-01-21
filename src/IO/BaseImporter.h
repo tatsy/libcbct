@@ -5,10 +5,17 @@
 #ifndef LIBCBCT_BASE_IMPORTER_H
 #define LIBCBCT_BASE_IMPORTER_H
 
-class BaseImporter {
+#include <string>
+
+#include "Common/Api.h"
+#include "Utils/Volume.h"
+
+class LIBCBCT_API BaseImporter {
 public:
     BaseImporter() = default;
     virtual ~BaseImporter() = default;
+
+    virtual void read(const std::string &filename, FloatVolume &sinogram) const = 0;
 };
 
 #endif  // LIBCBCT_BASE_IMPORTER_H

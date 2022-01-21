@@ -5,37 +5,42 @@
 #include <algorithm>
 #include <vector>
 #include <atomic>
+#include <mutex>
 
+#include "Common/ProgressBar.h"
 #include "Common/OpenMP.h"
+#include "IO/ImageSequenceImporter.h"
 
 #include <opencv2/opencv.hpp>
 
 int main(int argc, char **argv) {
-    const int N = 1000;
     const float sod = 810.23710000;
     const float sdd = 1167.39735297;
     const float pixelSizeX = 0.2;
     const float pixelSizeY = 0.2;
     const float freeRay = 6000.0;
 
-    printf("#project: %d\n", N);
     printf("SOD: %f\n", sod);
     printf("SDD: %f\n", sdd);
 
-    std::vector<cv::Mat> sinogram(N);
-    OMP_PARALLEL_FOR(int i = 0; i < N; i++) {
-        char filename[256];
-        sprintf(filename, "./data/amazon_cast/ScatterCorrect%05d.tif", i + 1);
-        cv::Mat image = cv::imread(filename, cv::IMREAD_UNCHANGED);
-        if (image.empty()) {
-            fprintf(stderr, "Failed to load image: %s\n", filename);
-            std::exit(1);
-        }
+    FloatVolume sinogram;
+    ImageSequenceImporter().read("../../data/amazon_cast/ScatterCorrect%05d.tif", sinogram);
 
-        cv::Mat temp;
-        image.convertTo(temp, CV_32F, 1.0f / freeRay);
+    const int detWidth = sinogram.size<0>();
+    const int detHeight = sinogram.size<1>();
+    const int N = sinogram.size<2>() - 1;
+    LIBCBCT_INFO("Sinogram: %dx%dx%d", detWidth, detHeight, N);
+
+    LIBCBCT_INFO("Filtering...");
+    ProgressBar pbar(N);
+    OMP_PARALLEL_FOR(int i = 0; i < N; i++) {
+        float *const ptr = sinogram.ptr() + (detWidth * detHeight * (uint64_t)i);
+        cv::Mat temp(detHeight, detWidth, CV_32FC1);
+        std::memcpy(temp.data, ptr, sizeof(float) * detWidth * detHeight);
+
+        temp.convertTo(temp, CV_32F, 1.0 / freeRay);
         cv::log(temp, temp);
-        temp = -temp;
+        temp.convertTo(temp, CV_32F, -1.0);
 
         cv::dft(temp, temp, cv::DFT_ROWS | cv::DFT_COMPLEX_OUTPUT);
         for (int y = 0; y < temp.rows; y++) {
@@ -48,19 +53,13 @@ int main(int argc, char **argv) {
             }
         }
         cv::idft(temp, temp, cv::DFT_ROWS | cv::DFT_COMPLEX_INPUT | cv::DFT_REAL_OUTPUT);
-
-        printf("%s\n", filename);
-        sinogram[i] = temp;
+        std::memcpy(ptr, temp.data, sizeof(float) * detWidth * detHeight);
+        pbar.step();
     }
 
-    const int detWidth = sinogram[0].cols;
-    const int detHeight = sinogram[0].rows;
-    printf("detW: %d\n", detWidth);
-    printf("detH: %d\n", detHeight);
-
-    const int sizeX = 1000;
-    const int sizeY = 1000;
-    const int sizeZ = 1000;
+    const int sizeX = 256;
+    const int sizeY = 256;
+    const int sizeZ = 256;
     const float voxelSize = (detWidth * pixelSizeX) * sod / sdd / sizeX;
 
     std::vector<cv::Mat> res(sizeZ);
@@ -71,6 +70,8 @@ int main(int argc, char **argv) {
 
     std::atomic<float> maxVal(-(float)FLT_MAX);
 
+    LIBCBCT_INFO("Back-projecting...");
+    pbar.reset(sizeZ);
     OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
         for (int y = 0; y < sizeY; y++) {
             for (int x = 0; x < sizeX; x++) {
@@ -89,7 +90,7 @@ int main(int argc, char **argv) {
                     const float iv = v / pixelSizeY + detHeight / 2;
 
                     if (iu >= 0.0 && iv >= 0.0 && iu < detWidth - 1 && iv < detHeight - 1) {
-                        res[z].at<float>(y, x) += sinogram[i].at<float>(cv::Point2f(iu, iv));
+                        res[z].at<float>(y, x) += sinogram(iu, iv, i);
                     }
                 }
                 res[z].at<float>(y, x) /= N;
@@ -97,6 +98,7 @@ int main(int argc, char **argv) {
                 maxVal.store(std::max(maxVal.load(), res[z].at<float>(y, x)));
             }
         }
+        pbar.step();
     }
 
     printf("maxVal = %f\n", maxVal.load());

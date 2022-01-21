@@ -3,4 +3,6 @@ target_sources(
   PRIVATE
   Api.h
   Logging.h
-  OpenMP.h)
+  OpenMP.h
+  Path.h
+  ProgressBar.h)

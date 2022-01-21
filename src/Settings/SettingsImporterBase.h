@@ -10,7 +10,7 @@
 
 #include "Common/Api.h"
 
-class SettingsImporterBase {
+class LIBCBCT_API SettingsImporterBase {
 public:
     SettingsImporterBase() = default;
     virtual ~SettingsImporterBase() = default;
