@@ -6,6 +6,7 @@
 #define LIBCBCT_VOLUME_H
 
 #include <cstring>
+#include <vector>
 #include <functional>
 
 #include "Common/Logging.h"
