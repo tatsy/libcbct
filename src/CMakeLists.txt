@@ -22,6 +22,7 @@ set(SUB_DIRS
   Settings;
   Utils)
 
+target_sources(${LIBCBCT} PUBLIC libcbct.h)
 foreach(DIR IN LISTS SUB_DIRS)
   file(GLOB SUB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/${DIR}/*.cpp

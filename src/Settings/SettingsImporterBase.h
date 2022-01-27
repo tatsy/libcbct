@@ -41,7 +41,7 @@ public:
         return it->second;
     }
 
-private:
+protected:
     std::unordered_map<std::string, std::string> data;
 };
 

@@ -3,4 +3,7 @@ target_sources(
   PRIVATE
   BaseImporter.h
   ImageSequenceImporter.cpp
-  ImageSequenceImporter.h)
+  ImageSequenceImporter.h
+  BaseExporter.h
+  RawVolumeExporter.cpp
+  RawVolumeExporter.h)

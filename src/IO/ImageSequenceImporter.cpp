@@ -35,6 +35,7 @@ void ImageSequenceImporter::read(const std::string &format, FloatVolume &sinogra
 
     sinogram = FloatVolume(width, height, nImages);
     ProgressBar pbar(nImages);
+    pbar.setDescription("IMPORT: ");
     OMP_PARALLEL_FOR(int i = 0; i < nImages; i++) {
         char filename[256];
         sprintf(filename, format.c_str(), startIndex + i);

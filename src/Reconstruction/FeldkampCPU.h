@@ -1,0 +1,24 @@
+#ifdef _MSC_VER
+#pragma once
+#endif
+
+#ifndef LIBCBCT_FELDKAMP_CPU_H
+#define LIBCBCT_FELDKAMP_CPU_H
+
+#include "ReconstructionBase.h"
+
+class LIBCBCT_API FeldkampCPU : public ReconstructionBase {
+public:
+    FeldkampCPU(RampFilter filter = RampFilter::RamLak)
+        : ReconstructionBase()
+        , filter(filter) {
+    }
+    ~FeldkampCPU() = default;
+
+    void reconstruct(const FloatVolume &volume, FloatVolume &tomogram, const GeometryBase &geometry) const override;
+
+private:
+    RampFilter filter;
+};
+
+#endif  // LIBCBCT_FELDKAMP_CPU_H

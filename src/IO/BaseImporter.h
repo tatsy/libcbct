@@ -10,6 +10,9 @@
 #include "Common/Api.h"
 #include "Utils/Volume.h"
 
+/**
+ * @brief Interface class for file importer
+ */
 class LIBCBCT_API BaseImporter {
 public:
     BaseImporter() = default;
