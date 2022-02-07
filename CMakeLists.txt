@@ -32,11 +32,22 @@ find_package(OpenCV REQUIRED)
 
 find_package(OpenMP)
 if (OPENMP_FOUND)
-  message("OpenMP found!")
+  message(STATUS "OpenMP found!")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
   include_directories(${OpenMP_C_INCLUDE_DIR} ${OpenMP_CXX_INCLUDE_DIR})
 endif()
+
+# ===============================================
+# check CUDA
+# ===============================================
+find_package(CUDA 9.0)
+if (CUDA_FOUND)
+  enable_language(CUDA)
+  set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+  set(CMAKE_CUDA_STANDARD 11)
+  message(STATUS "cuFFT: ${CUDA_cufft_LIBRARY}")
+  endif()
 
 # ===============================================
 # output directories

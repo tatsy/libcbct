@@ -2,18 +2,18 @@
 #pragma once
 #endif
 
-#ifndef LIBCBCT_FELDKAMP_CPU_H
-#define LIBCBCT_FELDKAMP_CPU_H
+#ifndef LIBCBCT_FELDKAMP_CUDA_H
+#define LIBCBCT_FELDKAMP_CUDA_H
 
 #include "ReconstructionBase.h"
 
-class LIBCBCT_API FeldkampCPU : public ReconstructionBase {
+class LIBCBCT_API FeldkampCUDA : public ReconstructionBase {
 public:
-    FeldkampCPU(RampFilter filter = RampFilter::RamLak)
+    FeldkampCUDA(RampFilter filter = RampFilter::RamLak)
         : ReconstructionBase()
         , filter(filter) {
     }
-    ~FeldkampCPU() = default;
+    ~FeldkampCUDA() = default;
 
     void reconstruct(const FloatVolume &sinogram, FloatVolume &tomogram, const Geometry &geometry) const override;
 
@@ -21,4 +21,4 @@ private:
     RampFilter filter;
 };
 
-#endif  // LIBCBCT_FELDKAMP_CPU_H
+#endif  // LIBCBCT_FELDKAMP_CUDA_H

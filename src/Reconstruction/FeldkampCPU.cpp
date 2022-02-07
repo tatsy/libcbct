@@ -9,15 +9,19 @@
 #include "Common/Logging.h"
 #include "Common/OpenMP.h"
 #include "Common/ProgressBar.h"
+#include "Utils/ImageUtils.h"
 
-void FeldkampCPU::reconstruct(const FloatVolume &sinogram, FloatVolume &tomogram, const GeometryBase &geometry) const {
+void FeldkampCPU::reconstruct(const FloatVolume &sinogram, FloatVolume &tomogram, const Geometry &geometry) const {
     const int detWidth = sinogram.size<0>();
     const int detHeight = sinogram.size<1>();
     const int nProj = sinogram.size<2>();
 
+    const vec3i volSize = geometry.volSize;
+    tomogram.resize(volSize.x, volSize.y, volSize.z);
+
     ProgressBar pbar(nProj);
-    pbar.setDescription("FILTER: ");
-    OMP_PARALLEL_FOR(int i = 0; i < nProj; i++) {
+    pbar.setDescription("RECON: ");
+    for (int i = 0; i < nProj; i++) {
         float *const ptr = sinogram.ptr() + (detWidth * detHeight * (uint64_t)i);
         cv::Mat temp(detHeight, detWidth, CV_32FC1);
         std::memcpy(temp.data, ptr, sizeof(float) * detWidth * detHeight);
@@ -36,27 +40,19 @@ void FeldkampCPU::reconstruct(const FloatVolume &sinogram, FloatVolume &tomogram
             }
         }
         cv::idft(temp, temp, cv::DFT_ROWS | cv::DFT_COMPLEX_INPUT | cv::DFT_REAL_OUTPUT);
-        std::memcpy(ptr, temp.data, sizeof(float) * detWidth * detHeight);
-        pbar.step();
-    }
 
-    const vec3i volSize = geometry.getVolumeSize();
-    tomogram.resize(volSize.x, volSize.y, volSize.z);
-
-    pbar.reset(volSize.z);
-    pbar.setDescription("BK-PRJ: ");
-    OMP_PARALLEL_FOR(int z = 0; z < volSize.z; z++) {
-        for (int y = 0; y < volSize.y; y++) {
-            for (int x = 0; x < volSize.x; x++) {
-                for (int i = 0; i < nProj; i++) {
+        OMP_PARALLEL_FOR(int z = 0; z < volSize.z; z++) {
+            for (int y = 0; y < volSize.y; y++) {
+                for (int x = 0; x < volSize.x; x++) {
                     const float theta = 2.0f * (float)M_PI * i / nProj;
-                    const vec2f uv = geometry.vox2pix(vec3i(x, y, z), theta);
-                    if (uv.x >= 0 && uv.y >= 0 && uv.x < detWidth && uv.y < detHeight) {
-                        tomogram(x, y, z) += sinogram(uv.x, uv.y, (float)(i + 0.5f)) / nProj;
-                    }
+                    const vec3f uvw = vox2pix(vec3i(x, y, z), theta, geometry);
+                    if (uvw.x >= 0 && uvw.y >= 0 && uvw.x < detWidth && uvw.y < detHeight) {
+                        tomogram(x, y, z) += bilerp((float *)temp.data, detWidth, detHeight, uvw.x - 0.5f, uvw.y - 0.5f) * uvw.z / nProj;
+                    }                
                 }
             }
         }
+
         pbar.step();
     }
 }

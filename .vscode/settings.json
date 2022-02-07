@@ -1,5 +1,6 @@
 {
     "cmake.configureArgs": [
+        "-DCMAKE_CUDA_ARCHITECTURES=61",
         "-DOpenCV_DIR=C:/Libraries/opencv/build/install"
     ],
     "[cpp]": {

@@ -12,7 +12,6 @@
 #include "Common/ProgressBar.h"
 
 #include "Geometry/GeometryBase.h"
-#include "Geometry/ConeBeamGeometry.h"
 
 #include "IO/BaseImporter.h"
 #include "IO/BaseExporter.h"
@@ -21,6 +20,7 @@
 
 #include "Reconstruction/ReconstructionBase.h"
 #include "Reconstruction/FeldkampCPU.h"
+#include "Reconstruction/FeldkampCUDA.h"
 
 #include "Settings/SettingsImporterBase.h"
 #include "Settings/JsonSettingImporter.h"

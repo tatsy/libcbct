@@ -45,10 +45,12 @@ int main(int argc, char **argv) {
     const int volSizeY = 256;
     const int volSizeZ = 256;
     FloatVolume tomogram;
-    ConeBeamGeometry geometry(vec2i(detWidth, detHeight), vec2f(pixelSizeX, pixelSizeY), vec3i(volSizeX, volSizeY, volSizeZ), sod, sdd);
+    Geometry geometry(vec2i(detWidth, detHeight), vec2f(pixelSizeX, pixelSizeY), vec3i(volSizeX, volSizeY, volSizeZ), sod, sdd);
 
     // Reconstruction
-    FeldkampCPU fdk(RampFilter::SheppLogan);
+    //FeldkampCPU fdk(RampFilter::SheppLogan);
+    //fdk.reconstruct(sinogram, tomogram, geometry);
+    FeldkampCUDA fdk(RampFilter::SheppLogan);
     fdk.reconstruct(sinogram, tomogram, geometry);
 
     // Normalize CT values
