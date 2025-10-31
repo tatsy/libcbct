@@ -81,17 +81,17 @@ public:
         LIBCBCT_ASSERT(x >= 0 && x < sizeX && y >= 0 && y < sizeY && z >= 0 && z < sizeZ,
                        "Volume index out of bounds!");
 
-        x = fmaxf(0.0f, fminf(x - 0.5f, (float)sizeX));
-        y = fmaxf(0.0f, fminf(y - 0.5f, (float)sizeY));
-        z = fmaxf(0.0f, fminf(z - 0.5f, (float)sizeZ));
-        
-        const int ix = fminf((int)x, (int)sizeX - 2);
-        const int iy = fminf((int)y, (int)sizeY - 2);
-        const int iz = fminf((int)z, (int)sizeZ - 2);
+        x = std::clamp(x - 0.5f, 0.0f, (float)sizeX);
+        y = std::clamp(y - 0.5f, 0.0f, (float)sizeY);
+        z = std::clamp(z - 0.5f, 0.0f, (float)sizeZ);
+
+        const int ix = std::min((int)x, (int)sizeX - 2);
+        const int iy = std::min((int)y, (int)sizeY - 2);
+        const int iz = std::min((int)z, (int)sizeZ - 2);
         const float u = x - ix;
         const float v = y - iy;
         const float w = z - iz;
-        
+
         const float v00 = (1.0f - u) * (*this)(ix, iy, iz) + u * (*this)(ix + 1, iy, iz);
         const float v01 = (1.0f - u) * (*this)(ix, iy, iz + 1) + u * (*this)(ix + 1, iy, iz + 1);
         const float v10 = (1.0f - u) * (*this)(ix, iy + 1, iz) + u * (*this)(ix + 1, iy + 1, iz);
@@ -136,8 +136,7 @@ public:
     }
 
     template <int Dim>
-    typename std::enable_if<Dim >= 0 && Dim <= 2, uint64_t>::type
-    size() const {
+    typename std::enable_if<Dim >= 0 && Dim <= 2, uint64_t>::type size() const {
         return sizes_[Dim];
     }
 
