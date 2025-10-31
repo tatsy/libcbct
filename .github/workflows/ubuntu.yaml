@@ -52,6 +52,12 @@ jobs:
           cmake . \
             -B build -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/opencv_install
+            -DBUILD_TESTS=OFF \
+            -DBUILD_PERF_TEST=OFF \
+            -DBUILD_opencv_apps=OFF \
+            -DBUILD_opencv_dnn=OFF \
+            -D INSTALL_C_EXAMPLES=OFF \
+            -D INSTALL_PYTHON_EXAMPLES=OFF
           cmake \
             --build build \
             --target install \
