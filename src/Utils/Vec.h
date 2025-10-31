@@ -80,27 +80,39 @@ struct vec_t<T, 2> {
     enum { dims = 2 };
     typedef T scalar_t;
 
-    inline __both__ vec_t() {}
+    inline __both__ vec_t() {
+    }
     inline __both__ vec_t(const T &t)
         : x(t)
-        , y(t) {}
+        , y(t) {
+    }
     inline __both__ vec_t(const T &x, const T &y)
         : x(x)
-        , y(y) {}
+        , y(y) {
+    }
 
 #ifdef __CUDACC__
     inline __both__ vec_t(const float2 &v)
         : x(v.x)
-        , y(v.y) {}
+        , y(v.y) {
+    }
     inline __both__ vec_t(const int2 &v)
         : x(v.x)
-        , y(v.y) {}
+        , y(v.y) {
+    }
     inline __both__ vec_t(const uint2 &v)
         : x(v.x)
-        , y(v.y) {}
-    inline __both__ operator float2() const { return make_float2(x, y); }
-    inline __both__ operator int2() const { return make_int2(x, y); }
-    inline __both__ operator uint2() const { return make_uint2(x, y); }
+        , y(v.y) {
+    }
+    inline __both__ operator float2() const {
+        return make_float2(x, y);
+    }
+    inline __both__ operator int2() const {
+        return make_int2(x, y);
+    }
+    inline __both__ operator uint2() const {
+        return make_uint2(x, y);
+    }
 #endif
 
     inline __both__ vec_t<T, 2> &operator=(const vec_t<T, 2> &other) {
@@ -122,10 +134,15 @@ struct vec_t<T, 2> {
     template <typename Other>
     inline __both__ explicit vec_t(const vec_t<Other, 2> &other)
         : x((T)other.x)
-        , y((T)other.y) {}
+        , y((T)other.y) {
+    }
 
-    inline __both__ T &operator[](size_t dim) { return (&x)[dim]; }
-    inline __both__ const T &operator[](size_t dim) const { return (&x)[dim]; }
+    inline __both__ T &operator[](size_t dim) {
+        return (&x)[dim];
+    }
+    inline __both__ const T &operator[](size_t dim) const {
+        return (&x)[dim];
+    }
 
     union {
         struct {
@@ -149,33 +166,45 @@ struct vec_t<T, 3> {
     enum { dims = 3 };
     typedef T scalar_t;
 
-    inline __both__ vec_t() {}
+    inline __both__ vec_t() {
+    }
     inline __both__ vec_t(const T &t)
         : x(t)
         , y(t)
-        , z(t) {}
+        , z(t) {
+    }
     inline __both__ vec_t(const T &x, const T &y, const T &z)
         : x(x)
         , y(y)
-        , z(z) {}
+        , z(z) {
+    }
     inline __both__ vec_t(const vec_t<T, 4> &v);
 
 #ifdef __CUDACC__
     inline __both__ vec_t(const float3 &v)
         : x(v.x)
         , y(v.y)
-        , z(v.z) {}
+        , z(v.z) {
+    }
     inline __both__ vec_t(const int3 &v)
         : x(v.x)
         , y(v.y)
-        , z(v.z) {}
+        , z(v.z) {
+    }
     inline __both__ vec_t(const uint3 &v)
         : x(v.x)
         , y(v.y)
-        , z(v.z) {}
-    inline __both__ operator float3() const { return make_float3(x, y, z); }
-    inline __both__ operator int3() const { return make_int3(x, y, z); }
-    inline __both__ operator uint3() const { return make_uint3(x, y, z); }
+        , z(v.z) {
+    }
+    inline __both__ operator float3() const {
+        return make_float3(x, y, z);
+    }
+    inline __both__ operator int3() const {
+        return make_int3(x, y, z);
+    }
+    inline __both__ operator uint3() const {
+        return make_uint3(x, y, z);
+    }
 #endif
 
     inline __both__ vec_t<T, 3> &operator=(const vec_t<T, 3> &other) {
@@ -199,10 +228,15 @@ struct vec_t<T, 3> {
     inline __both__ explicit vec_t(const vec_t<Other, 3> &other)
         : x((T)other.x)
         , y((T)other.y)
-        , z((T)other.z) {}
+        , z((T)other.z) {
+    }
 
-    inline __both__ T &operator[](size_t dim) { return (&x)[dim]; }
-    inline __both__ const T &operator[](size_t dim) const { return (&x)[dim]; }
+    inline __both__ T &operator[](size_t dim) {
+        return (&x)[dim];
+    }
+    inline __both__ const T &operator[](size_t dim) const {
+        return (&x)[dim];
+    }
 
     union {
         struct {
@@ -226,42 +260,55 @@ struct vec_t<T, 4> {
     enum { dims = 4 };
     typedef T scalar_t;
 
-    inline __both__ vec_t() {}
+    inline __both__ vec_t() {
+    }
     inline __both__ vec_t(const T &t)
         : x(t)
         , y(t)
         , z(t)
-        , w(t) {}
+        , w(t) {
+    }
     inline __both__ vec_t(const T &x, const T &y, const T &z, const T &w)
         : x(x)
         , y(y)
         , z(z)
-        , w(w) {}
+        , w(w) {
+    }
     inline __both__ vec_t(const vec_t<T, 3> &v, const T &w)
         : x(v.x)
         , y(v.y)
         , z(v.z)
-        , w(w) {}
+        , w(w) {
+    }
 
 #ifdef __CUDACC__
     inline __both__ vec_t(const float4 &v)
         : x(v.x)
         , y(v.y)
         , z(v.z)
-        , w(v.w) {}
+        , w(v.w) {
+    }
     inline __both__ vec_t(const int4 &v)
         : x(v.x)
         , y(v.y)
         , z(v.z)
-        , w(v.w) {}
+        , w(v.w) {
+    }
     inline __both__ vec_t(const uint4 &v)
         : x(v.x)
         , y(v.y)
         , z(v.z)
-        , w(v.w) {}
-    inline __both__ operator float4() const { return make_float4(x, y, z, w); }
-    inline __both__ operator int4() const { return make_int4(x, y, z, w); }
-    inline __both__ operator uint4() const { return make_uint4(x, y, z, w); }
+        , w(v.w) {
+    }
+    inline __both__ operator float4() const {
+        return make_float4(x, y, z, w);
+    }
+    inline __both__ operator int4() const {
+        return make_int4(x, y, z, w);
+    }
+    inline __both__ operator uint4() const {
+        return make_uint4(x, y, z, w);
+    }
 #endif
 
     inline __both__ vec_t<T, 3> &operator=(const vec_t<T, 3> &other) {
@@ -287,10 +334,15 @@ struct vec_t<T, 4> {
         : x((T)other.x)
         , y((T)other.y)
         , z((T)other.z)
-        , w((T)other.w) {}
+        , w((T)other.w) {
+    }
 
-    inline __both__ T &operator[](size_t dim) { return (&x)[dim]; }
-    inline __both__ const T &operator[](size_t dim) const { return (&x)[dim]; }
+    inline __both__ T &operator[](size_t dim) {
+        return (&x)[dim];
+    }
+    inline __both__ const T &operator[](size_t dim) const {
+        return (&x)[dim];
+    }
 
     union {
         struct {
@@ -402,7 +454,7 @@ _define_float_functor(saturate)
         return vec_t<T, 4>(fct(a.x, b.x), fct(a.y, b.y), fct(a.z, b.z), fct(a.w, b.w));                              \
     }
 
-// clang-format off
+    // clang-format off
 _define_binary_functor(divRoundUp)
 _define_binary_functor(min)
 _define_binary_functor(max)
@@ -430,7 +482,7 @@ _define_binary_functor(max)
         return vec_t<T, 4>(op v.x, op v.y, op v.z, op v.w);         \
     }
 
-            _define_unary_op(+);
+        _define_unary_op(+);
 _define_unary_op(-);
 
 // -------------------------------------------------------
@@ -522,43 +574,43 @@ _define_compare_operator(!=);
 // assign operators
 // -------------------------------------------------------
 
-#define _define_assign_operator(op)                                                  \
-    /* vec op vec */                                                                 \
-    template <typename T>                                                            \
-    inline __both__ vec_t<T, 2> &vec_t<T, 2>::operator op##=(const vec_t<T, 2> &o) { \
-        *this = *this op o;                                                          \
-        return *this;                                                                \
-    }                                                                                \
-                                                                                     \
-    template <typename T>                                                            \
-    inline __both__ vec_t<T, 3> &vec_t<T, 3>::operator op##=(const vec_t<T, 3> &o) { \
-        *this = *this op o;                                                          \
-        return *this;                                                                \
-    }                                                                                \
-                                                                                     \
-    template <typename T>                                                            \
-    inline __both__ vec_t<T, 4> &vec_t<T, 4>::operator op##=(const vec_t<T, 4> &o) { \
-        *this = *this op o;                                                          \
-        return *this;                                                                \
-    }                                                                                \
-                                                                                     \
-    /* vec op scalar */                                                              \
-    template <typename T>                                                            \
-    inline __both__ vec_t<T, 2> &vec_t<T, 2>::operator op##=(const T &o) {           \
-        *this = *this op o;                                                          \
-        return *this;                                                                \
-    }                                                                                \
-                                                                                     \
-    template <typename T>                                                            \
-    inline __both__ vec_t<T, 3> &vec_t<T, 3>::operator op##=(const T &o) {           \
-        *this = *this op o;                                                          \
-        return *this;                                                                \
-    }                                                                                \
-                                                                                     \
-    template <typename T>                                                            \
-    inline __both__ vec_t<T, 4> &vec_t<T, 4>::operator op##=(const T &o) {           \
-        *this = *this op o;                                                          \
-        return *this;                                                                \
+#define _define_assign_operator(op)                                                    \
+    /* vec op vec */                                                                   \
+    template <typename T>                                                              \
+    inline __both__ vec_t<T, 2> &vec_t<T, 2>::operator op## = (const vec_t<T, 2> &o) { \
+        *this = *this op o;                                                            \
+        return *this;                                                                  \
+    }                                                                                  \
+                                                                                       \
+    template <typename T>                                                              \
+    inline __both__ vec_t<T, 3> &vec_t<T, 3>::operator op## = (const vec_t<T, 3> &o) { \
+        *this = *this op o;                                                            \
+        return *this;                                                                  \
+    }                                                                                  \
+                                                                                       \
+    template <typename T>                                                              \
+    inline __both__ vec_t<T, 4> &vec_t<T, 4>::operator op## = (const vec_t<T, 4> &o) { \
+        *this = *this op o;                                                            \
+        return *this;                                                                  \
+    }                                                                                  \
+                                                                                       \
+    /* vec op scalar */                                                                \
+    template <typename T>                                                              \
+    inline __both__ vec_t<T, 2> &vec_t<T, 2>::operator op## = (const T &o) {           \
+        *this = *this op o;                                                            \
+        return *this;                                                                  \
+    }                                                                                  \
+                                                                                       \
+    template <typename T>                                                              \
+    inline __both__ vec_t<T, 3> &vec_t<T, 3>::operator op## = (const T &o) {           \
+        *this = *this op o;                                                            \
+        return *this;                                                                  \
+    }                                                                                  \
+                                                                                       \
+    template <typename T>                                                              \
+    inline __both__ vec_t<T, 4> &vec_t<T, 4>::operator op## = (const T &o) {           \
+        *this = *this op o;                                                            \
+        return *this;                                                                  \
     }
 
 _define_assign_operator(*);
@@ -590,4 +642,3 @@ template <typename T>
 inline __both__ vec_t<T, 3> normalize(const vec_t<T, 3> &v) {
     return v * 1.0f / length(v);
 }
-
