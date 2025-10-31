@@ -15,16 +15,16 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
-          - os: ubuntu-latest
-            compiler: gcc
-          - os: ubuntu-latest
-            compiler: clang
-          - os: macos-latest
-            compiler: clang
-          - os: macos-latest
-            compiler: gcc
-          - os: windows-latest
-            compiler: msvc
+          - compiler: gcc
+            os: ubuntu-latest
+          - compiler: clang
+            os: ubuntu-latest
+          - compiler: clang
+            os: macos-latest
+          - compiler: gcc
+            os: macos-latest
+          - compiler: msvc
+            os: windows-latest
 
     runs-on: ${{ matrix.os }}
 
@@ -49,13 +49,18 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/opencv/opencv.git --branch 4.12.0
           cd opencv
-          cmake . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/opencv_install
-          cmake --build build --target install --config Release --parallel 2
+          cmake . \
+            -B build -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/opencv_install
+          cmake \
+            --build build \
+            --target install \
+            --config Release \
+            --parallel 2
 
       - name: CMake Build
         run: |
           cmake . \
-            -G Ninja \
             -B ${{runner.workspace}}/build \
             -DCMAKE_BUILD_TYPE=Release
             -DOpenCV_DIR=${{runner.workspace}}/opencv_install/lib/cmake/opencv4 \
