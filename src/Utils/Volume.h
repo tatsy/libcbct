@@ -46,7 +46,7 @@ public:
         sizeX = other.sizeX;
         sizeY = other.sizeY;
         sizeZ = other.sizeZ;
-        this->alloc();
+        this->resize(sizeX, sizeY, sizeZ);
         std::memcpy(data, other.data, sizeof(T) * sizeX * sizeY * sizeZ);
         return *this;
     }

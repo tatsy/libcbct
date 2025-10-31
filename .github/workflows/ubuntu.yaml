@@ -77,5 +77,5 @@ jobs:
 
       - name: CMake Build
         run: |
-          cmake . -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=${{runner.workspace}}/opencv_install/lib/cmake/opencv4
+          cmake . -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=${{runner.workspace}}/opencv_install
           cmake --build ${{runner.workspace}}/build --config Release --parallel 2
