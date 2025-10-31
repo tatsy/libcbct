@@ -30,9 +30,7 @@ int main(int argc, char **argv) {
     FloatVolume sinogram;
     ImageSequenceImporter().read("../../data/amazon_cast/ScatterCorrect%05d.tif", sinogram);
 
-    sinogram.forEach([freeRay](float v) -> float {
-        return -std::log(v / freeRay);
-    });
+    sinogram.forEach([freeRay](float v) -> float { return -std::log(v / freeRay); });
 
     const int detWidth = sinogram.size<0>();
     const int detHeight = sinogram.size<1>();
@@ -45,23 +43,23 @@ int main(int argc, char **argv) {
     const int volSizeY = 256;
     const int volSizeZ = 256;
     FloatVolume tomogram;
-    Geometry geometry(vec2i(detWidth, detHeight), vec2f(pixelSizeX, pixelSizeY), vec3i(volSizeX, volSizeY, volSizeZ), sod, sdd);
+    Geometry geometry(vec2i(detWidth, detHeight), vec2f(pixelSizeX, pixelSizeY), vec3i(volSizeX, volSizeY, volSizeZ),
+                      sod, sdd);
 
-    // Reconstruction
-    //FeldkampCPU fdk(RampFilter::SheppLogan);
-    //fdk.reconstruct(sinogram, tomogram, geometry);
+// Reconstruction
+#if defined(LIBCBCT_WITH_CUDA)
     FeldkampCUDA fdk(RampFilter::SheppLogan);
     fdk.reconstruct(sinogram, tomogram, geometry);
+#else
+    FeldkampCPU fdk(RampFilter::SheppLogan);
+    fdk.reconstruct(sinogram, tomogram, geometry);
+#endif  // LIBCBCT_WITH_CUDA
 
     // Normalize CT values
-    const float maxVal = tomogram.reduce([](float a, float b) -> float {
-        return std::max(a, b);
-    }, -(float)FLT_MAX);
+    const float maxVal = tomogram.reduce([](float a, float b) -> float { return std::max(a, b); }, -(float)FLT_MAX);
     LIBCBCT_DEBUG("Max value: %f", maxVal);
 
-    tomogram.forEach([maxVal](float x) -> float {
-        return x / maxVal;
-    });
+    tomogram.forEach([maxVal](float x) -> float { return x / maxVal; });
 
     // Export tomogram
     RawVolumeExporter exporter;

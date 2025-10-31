@@ -20,7 +20,10 @@
 
 #include "Reconstruction/ReconstructionBase.h"
 #include "Reconstruction/FeldkampCPU.h"
+
+#if defined(LIBCBCT_WITH_CUDA)
 #include "Reconstruction/FeldkampCUDA.h"
+#endif  // LIBCBCT_WITH_CUDA
 
 #include "Settings/SettingsImporterBase.h"
 #include "Settings/JsonSettingImporter.h"

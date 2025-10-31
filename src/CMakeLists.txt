@@ -5,12 +5,23 @@ if (BUILD_STATIC_LIBS)
   add_library(${LIBCBCT} STATIC)
 else()
   add_library(${LIBCBCT} SHARED)
+endif()
+
+target_include_directories(
+  ${LIBCBCT} PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${OpenCV_INCLUDE_DIRS})
+
+target_link_libraries(
+  ${LIBCBCT} PUBLIC
+  ${OpenCV_LIBS}
+  ${OpenMP_libomp_LIBRARY})
+
+if (WITH_CUDA)
   target_link_libraries(
-    ${LIBCBCT}
-    ${OpenCV_LIBS}
-    ${OpenMP_libomp_LIBRARY}
+    ${LIBCBCT} PUBLIC
     ${CUDA_LIBRARIES}
-    ${CUDA_cufft_LIBRARY})  
+    ${CUDA_cufft_LIBRARY})
 endif()
 
 # ===============================================
@@ -28,8 +39,14 @@ target_sources(${LIBCBCT} PUBLIC libcbct.h)
 foreach(DIR IN LISTS SUB_DIRS)
   file(GLOB SUB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/${DIR}/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/${DIR}/*.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/${DIR}/*.h)
+
+  if (WITH_CUDA)
+    file(GLOB CUDA_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/${DIR}/*.cu)
+    list(APPEND SUB_SOURCES ${CUDA_SOURCES})
+  endif()
+
   target_sources(${LIBCBCT} PRIVATE ${SUB_SOURCES})
   source_group(${DIR} FILES ${SUB_SOURCES})
 endforeach()
@@ -39,17 +56,29 @@ endforeach()
 # ===============================================
 add_executable(${LIBCBCT_EXE} main.cpp)
 
-include_directories(
+target_include_directories(
+  ${LIBCBCT_EXE} PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${OpenCV_INCLUDE_DIRS})
 
 target_link_libraries(
-  ${LIBCBCT_EXE}
+  ${LIBCBCT_EXE} PRIVATE
   ${LIBCBCT}
-  ${OpenCV_LIBS}
-  ${OpenMP_libomp_LIBRARY}
-  ${CUDA_LIBRARIES}
-  ${CUDA_cufft_LIBRARY})
+  ${OpenCV_LIBS})
+
+if (WITH_OPENMP)
+  target_link_libraries(
+    ${LIBCBCT_EXE} PRIVATE
+    OpenMP::OpenMP_CXX)
+endif()
+
+if (WITH_CUDA)
+  target_link_libraries(
+    ${LIBCBCT_EXE} PRIVATE
+    ${CUDA_LIBRARIES}
+    ${CUDA_cufft_LIBRARY})
+endif()
+
 set_property(TARGET ${LIBCBCT_EXE} PROPERTY DEBUG_POSTFIX "-debug")
 
 if (MSVC)

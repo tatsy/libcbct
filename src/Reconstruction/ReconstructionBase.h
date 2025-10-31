@@ -25,7 +25,6 @@ public:
     virtual void reconstruct(const FloatVolume &sinogram, FloatVolume &tomogram, const Geometry &geometry) const = 0;
 
 protected:
-
 };
 
 #endif  // LIBCBCT_RECONSTRUCTION_BASE_H

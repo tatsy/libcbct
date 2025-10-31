@@ -1,0 +1,90 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "msvc2022",
+      "displayName": "Windows x64",
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build",
+      "architecture": {
+        "value": "x64",
+        "strategy": "set"
+      },
+      "cacheVariables": {
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
+        "WITH_OPENMP": "ON"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": ["Windows"],
+          "intelliSenseMode": "windows-msvc-x64"
+        }
+      }
+    },
+    {
+      "name": "macos-debug",
+      "displayName": "MacOS | Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
+        "WITH_OPENMP": "OFF"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": ["macOS"],
+          "intelliSenseMode": "ios-clang-arm64"
+        }
+      }
+    },
+    {
+      "name": "macos-release",
+      "displayName": "MacOS | Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
+        "WITH_OPENMP": "ON"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": ["macOS"],
+          "intelliSenseMode": "ios-clang-arm64"
+        }
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "Release",
+      "configurePreset": "msvc2022",
+      "configuration": "Release",
+      "jobs": 4
+    },
+    {
+      "name": "Debug",
+      "configurePreset": "msvc2022",
+      "configuration": "Debug",
+      "jobs": 4
+    },
+    {
+      "name": "RelWithDebInfo",
+      "configurePreset": "msvc2022",
+      "configuration": "RelWithDebInfo",
+      "jobs": 4
+    },
+    {
+      "name": "MinSizeRel",
+      "configurePreset": "msvc2022",
+      "configuration": "MinSizeRel",
+      "jobs": 4
+    }
+  ]
+}
