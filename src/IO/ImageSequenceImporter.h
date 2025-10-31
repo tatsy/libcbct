@@ -9,10 +9,16 @@
 
 class LIBCBCT_API ImageSequenceImporter : public BaseImporter {
 public:
-    ImageSequenceImporter() = default;
+    explicit ImageSequenceImporter(bool reverseOrder = false)
+        : BaseImporter{}
+        , reverseOrder{ reverseOrder } {
+    }
     virtual ~ImageSequenceImporter() = default;
 
     void read(const std::string &format, FloatVolume &sinogram) const override;
+
+private:
+    bool reverseOrder = false;
 };
 
 #endif  // LIBCBCT_IMAGE_SEQUENCE_IMPORTER_H

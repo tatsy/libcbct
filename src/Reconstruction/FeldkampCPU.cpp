@@ -17,6 +17,7 @@ void FeldkampCPU::reconstruct(const FloatVolume &sinogram, FloatVolume &tomogram
     const int nProj = sinogram.size<2>();
 
     const vec3i volSize = geometry.volSize;
+    LIBCBCT_DEBUG("Volume size: %dx%dx%d", volSize.x, volSize.y, volSize.z);
     tomogram.resize(volSize.x, volSize.y, volSize.z);
 
     ProgressBar pbar(nProj);
@@ -47,8 +48,9 @@ void FeldkampCPU::reconstruct(const FloatVolume &sinogram, FloatVolume &tomogram
                     const float theta = 2.0f * (float)M_PI * i / nProj;
                     const vec3f uvw = vox2pix(vec3i(x, y, z), theta, geometry);
                     if (uvw.x >= 0 && uvw.y >= 0 && uvw.x < detWidth && uvw.y < detHeight) {
-                        tomogram(x, y, z) += bilerp((float *)temp.data, detWidth, detHeight, uvw.x - 0.5f, uvw.y - 0.5f) * uvw.z / nProj;
-                    }                
+                        tomogram(x, y, z) +=
+                            bilerp((float *)temp.data, detWidth, detHeight, uvw.x - 0.5f, uvw.y - 0.5f) * uvw.z / nProj;
+                    }
                 }
             }
         }

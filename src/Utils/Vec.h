@@ -5,9 +5,9 @@
 #include <stdint.h>
 
 #ifdef __CUDACC__
-#define __both__ __host__ __device__
+  #define __both__ __host__ __device__
 #else
-#define __both__
+  #define __both__
 #endif
 
 // Default vector type template

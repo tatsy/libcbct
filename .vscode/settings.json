@@ -1,9 +1,53 @@
 {
-    "cmake.configureArgs": [
-        "-DCMAKE_CUDA_ARCHITECTURES=61",
-        "-DOpenCV_DIR=C:/Libraries/opencv/build/install"
-    ],
-    "[cpp]": {
-        "editor.formatOnSave": true,
+  // Folder exclusion
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true
+  },
+  // C++
+  "C_Cpp.codeAnalysis.clangTidy.path": "clang-tidy",
+  "C_Cpp.codeAnalysis.clangTidy.enabled": false,
+  "C_Cpp.codeAnalysis.clangTidy.useBuildPath": false,
+  "C_Cpp.codeAnalysis.runAutomatically": false,
+  "C_Cpp.codeAnalysis.exclude": {
+    "${workspaceFolder}/src/eigen3": false
+  },
+  // C/C++ Flylint
+  "c-cpp-flylint.debug": true,
+  "c-cpp-flylint.language": "c++",
+  "c-cpp-flylint.standard": ["c++17"],
+  "c-cpp-flylint.clang.enable": false,
+  "c-cpp-flylint.cppcheck.enable": true,
+  "c-cpp-flylint.cppcheck.extraArgs": [],
+  "c-cpp-flylint.cppcheck.suppressions": [
+    "*:src/eigen3/*:*",
+    "*:src/glfw/*:*",
+    "*:src/glm/*:*",
+    "*:src/imgui/*:*",
+    "*:src/tinyobjloader/*:*",
+    "*:src/tinyply/*:*"
+  ],
+  "c-cpp-flylint.lizard.enable": false,
+  "c-cpp-flylint.flawfinder.enable": false,
+  "c-cpp-flylint.flexelint.enable": false,
+  "c-cpp-flylint.pclintplus.enable": false,
+  "c-cpp-flylint.defines": [],
+  "[c][cpp]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnType": false
+  },
+  // CMake
+  "cmake.useCMakePresets": "auto",
+  // Spell check
+  "cSpell.languageSettings": [
+    {
+      "languageId": "c,cpp",
+      "allowCompoundWords": true,
+      "includeRegExpList": ["CStyleComment", "string"]
     }
+  ]
 }

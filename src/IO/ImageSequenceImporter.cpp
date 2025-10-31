@@ -13,7 +13,7 @@ void ImageSequenceImporter::read(const std::string &format, FloatVolume &sinogra
     int nImages = 0;
     int width = 0;
     int height = 0;
-    for (int i = 0; ; i++) {
+    for (int i = 0;; i++) {
         char filename[256];
         sprintf(filename, format.c_str(), i);
         filepath path(filename);
@@ -47,7 +47,8 @@ void ImageSequenceImporter::read(const std::string &format, FloatVolume &sinogra
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                sinogram(x, y, i) = (float)image.at<uint16_t>(y, x);
+                const int index = reverseOrder ? (nImages - 1 - i) : i;
+                sinogram(x, y, index) = (float)image.at<uint16_t>(y, x);
             }
         }
         pbar.step();

@@ -1,2 +1,7 @@
 data/*
 build/*
+.DS_Store
+
+*.raw
+*.tif
+*.tiff

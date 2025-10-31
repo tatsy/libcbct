@@ -1,11 +1,11 @@
 #ifdef _MSC_VER
-#pragma once
+  #pragma once
 #endif
 
 #ifndef LIBCBCT_FELDKAMP_CUDA_H
-#define LIBCBCT_FELDKAMP_CUDA_H
+  #define LIBCBCT_FELDKAMP_CUDA_H
 
-#include "ReconstructionBase.h"
+  #include "ReconstructionBase.h"
 
 class LIBCBCT_API FeldkampCUDA : public ReconstructionBase {
 public:
