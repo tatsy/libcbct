@@ -61,6 +61,7 @@ else()
   set(WITH_VTK OFF CACHE BOOL "" FORCE)
 
   FetchContent_MakeAvailable(opencv)
+  set(OpenCV_DIR ${opencv_BINARY_DIR}/lib/cmake/opencv4)
   find_package(OpenCV REQUIRED CONFIG)
   
   mark_as_advanced(FETCHCONTENT_BASE_DIR)
