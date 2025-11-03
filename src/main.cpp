@@ -7,14 +7,27 @@
 #include <atomic>
 #include <mutex>
 
+#include <cxxopts.hpp>
 #include <opencv2/opencv.hpp>
 
 #include "libcbct.h"
 
 int main(int argc, char **argv) {
+    // Parse command line options
+    cxxopts::Options options("cbct_ext");
+    options.add_options()("h,help", "Print help");
+    options.add_options()("c,config", "Input configuration file", cxxopts::value<std::string>());
+    options.add_options()("s,size", "Reconstruction volume size (cubic)", cxxopts::value<int>()->default_value("512"));
+    const auto configs = options.parse(argc, argv);
+
+    if (configs["config"].count() == 0) {
+        std::cout << options.help() << std::endl;
+        return 0;
+    }
+
     // Read device parameters
     JsonSettingImporter config;
-    config.read("data/clip/config.json");
+    config.read(configs["config"].as<std::string>());
 
     const float sod = config.getFloat("SOD");
     const float sdd = config.getFloat("SDD");
@@ -42,12 +55,12 @@ int main(int argc, char **argv) {
     LIBCBCT_DEBUG("Sinogram: %dx%dx%d", detWidth, detHeight, numberOfProj);
 
     // Setup projection geometry
-    const int volSizeX = 800;
-    const int volSizeY = 800;
-    const int volSizeZ = 800;
+    const int volSize = configs["size"].as<int>();
+    LIBCBCT_DEBUG("Reconstruction volume size: %d", volSize);
+
     FloatVolume tomogram;
-    Geometry geometry(vec2i(detWidth, detHeight), vec2f(pixelSizeX, pixelSizeY), vec3i(volSizeX, volSizeY, volSizeZ),
-                      sod, sdd);
+    Geometry geometry(vec2i(detWidth, detHeight), vec2f(pixelSizeX, pixelSizeY), vec3i(volSize, volSize, volSize), sod,
+                      sdd);
 
 // // Reconstruction
 #if defined(LIBCBCT_WITH_CUDA)
@@ -69,7 +82,7 @@ int main(int argc, char **argv) {
     exporter.write("output.raw", tomogram);
 
     // Preview center slice
-    cv::Mat slice(volSizeY, volSizeX, CV_32F, tomogram.ptr() + (volSizeX * volSizeY * volSizeZ / 2));
+    cv::Mat slice(volSize, volSize, CV_32F, tomogram.ptr() + (volSize * volSize * volSize / 2));
     cv::imshow("center slice", slice);
     cv::waitKey(0);
     cv::destroyAllWindows();

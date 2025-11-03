@@ -5,7 +5,7 @@ include(FetchContent)
 set(FETCHCONTENT_QUIET ON)
 
 # ===============================================
-# options
+# Options
 # ===============================================
 option(WITH_CUDA "Build with CUDA support" OFF)
 option(WITH_OPENMP "Build with OpenMP support" OFF)
@@ -13,13 +13,13 @@ option(BUILD_STATIC_LIBS "Build static libraries rather than shared libraries" O
 option(LIBCBCT_BUILD_OPENCV_FROM_SOURCE "Build OpenCV from source" OFF)
 
 # ===============================================
-# global build targets
+# Global build targets
 # ===============================================
 set(LIBCBCT "cbct")
 set(LIBCBCT_EXE "cbct_exe")
 
 # ===============================================
-# compiler settings
+# Compiler settings
 # ===============================================
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -31,7 +31,7 @@ else()
 endif()
 
 # ===============================================
-# required packages
+# OpenCV
 # ===============================================
 if (NOT LIBCBCT_BUILD_OPENCV_FROM_SOURCE)
   find_package(OpenCV QUIET CONFIG)
@@ -71,6 +71,10 @@ else()
   mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_opencv)
 endif()
 
+# ===============================================
+# OpenMP
+# ===============================================
+
 if (WITH_OPENMP)
   find_package(OpenMP REQUIRED)
   if (OPENMP_FOUND)
@@ -79,7 +83,7 @@ if (WITH_OPENMP)
 endif()
 
 # ===============================================
-# check CUDA
+# CUDA
 # ===============================================
 if (WITH_CUDA)
   enable_language(CUDA)
@@ -93,7 +97,7 @@ if (WITH_CUDA)
 endif()
 
 # ===============================================
-# output directories
+# Output directories
 # ===============================================
 foreach(CONFIG_TYPE Debug Release RelWithDebInfo MinSizeRel)
   string(TOUPPER ${CONFIG_TYPE} CONFIG)
@@ -104,6 +108,12 @@ endforeach()
 set(CMAKE_DEBUG_POSTFIX "-debug")
 
 # ===============================================
-# traverse subdirectories
+# Submodules
+# ===============================================
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/submodules/cxxopts/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/submodules/jsonhpp/include)
+
+# ===============================================
+# Traverse subdirectories
 # ===============================================
 add_subdirectory(src)
