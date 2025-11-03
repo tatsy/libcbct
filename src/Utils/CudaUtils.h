@@ -22,7 +22,9 @@
     }
 
 #define CUDA_CHECK_NOEXCEPT(call) \
-    { cuda##call; }
+    {                             \
+        cuda##call;               \
+    }
 
 #define CUDA_SYNC_CHECK()                                                                                \
     {                                                                                                    \

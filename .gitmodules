@@ -1,0 +1,6 @@
+[submodule "submodules/cxxopts"]
+	path = submodules/cxxopts
+	url = https://github.com/jarro2783/cxxopts
+[submodule "submodules/jsonhpp"]
+	path = submodules/jsonhpp
+	url = https://github.com/nlohmann/json

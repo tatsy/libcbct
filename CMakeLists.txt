@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 3.13.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(LibCBCT LANGUAGES C CXX)
+
+include(FetchContent)
+set(FETCHCONTENT_QUIET ON)
 
 # ===============================================
 # options
@@ -7,6 +10,7 @@ project(LibCBCT LANGUAGES C CXX)
 option(WITH_CUDA "Build with CUDA support" OFF)
 option(WITH_OPENMP "Build with OpenMP support" OFF)
 option(BUILD_STATIC_LIBS "Build static libraries rather than shared libraries" OFF)
+option(LIBCBCT_BUILD_OPENCV_FROM_SOURCE "Build OpenCV from source" OFF)
 
 # ===============================================
 # global build targets
@@ -17,10 +21,9 @@ set(LIBCBCT_EXE "cbct_exe")
 # ===============================================
 # compiler settings
 # ===============================================
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (MSVC)
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")  # enable debugging
   add_definitions("-D_CRT_SECURE_NO_WARNINGS")
   add_definitions("-DNOMINMAX")
 else()
@@ -30,15 +33,48 @@ endif()
 # ===============================================
 # required packages
 # ===============================================
-find_package(OpenCV REQUIRED)
+if (NOT LIBCBCT_BUILD_OPENCV_FROM_SOURCE)
+  find_package(OpenCV QUIET CONFIG)
+endif()
+
+if (OpenCV_FOUND)
+  message(STATUS "OpenCV found! Version: ${OpenCV_VERSION}")
+else()
+  # Build OpenCV from source
+  message(STATUS "Building OpenCV from source...")
+  set(OPENCV_BUILD_LIST "core;imgproc;imgcodecs;highgui" CACHE STRING "" FORCE)
+
+  FetchContent_Declare(
+    opencv
+    GIT_REPOSITORY https://github.com/opencv/opencv
+    GIT_TAG 4.12.0
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+  )
+
+  set(BUILD_LIST ${OPENCV_BUILD_LIST} CACHE STRING "" FORCE)
+  set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+  set(BUILD_PERF_TEST OFF CACHE BOOL "" FORCE)
+  set(BUILD_JAVA OFF CACHE BOOL "" FORCE)
+  set(BUILD_PYTHON_BINDINGS OFF CACHE BOOL "" FORCE)
+  set(WITH_VTK OFF CACHE BOOL "" FORCE)
+
+  FetchContent_MakeAvailable(opencv)
+  find_package(OpenCV REQUIRED CONFIG)
+  
+  mark_as_advanced(FETCHCONTENT_BASE_DIR)
+  mark_as_advanced(FETCHCONTENT_FULLY_DISCONNECTED)
+  mark_as_advanced(FETCHCONTENT_QUIET)
+  mark_as_advanced(FETCHCONTENT_SOURCE_DIR_opencv)
+  mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED)
+  mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_opencv)
+endif()
 
 if (WITH_OPENMP)
-  find_package(OpenMP)
+  find_package(OpenMP REQUIRED)
   if (OPENMP_FOUND)
     message(STATUS "OpenMP found!")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    include_directories(${OpenMP_C_INCLUDE_DIR} ${OpenMP_CXX_INCLUDE_DIR})
   endif()
 endif()
 

@@ -10,18 +10,30 @@ endif()
 target_include_directories(
   ${LIBCBCT} PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${OpenCV_INCLUDE_DIRS})
+  ${OpenCV_INCLUDE_DIRS}
+)
 
 target_link_libraries(
   ${LIBCBCT} PUBLIC
-  ${OpenCV_LIBS}
-  ${OpenMP_libomp_LIBRARY})
+  opencv_core
+  opencv_imgproc
+  opencv_imgcodecs
+  opencv_highgui
+)
+
+if (WITH_OPENMP)
+  target_link_libraries(
+    ${LIBCBCT} PUBLIC
+    OpenMP::OpenMP_CXX
+  )
+endif()
 
 if (WITH_CUDA)
   target_link_libraries(
     ${LIBCBCT} PUBLIC
     ${CUDA_LIBRARIES}
-    ${CUDA_cufft_LIBRARY})
+    ${CUDA_cufft_LIBRARY}
+  )
 endif()
 
 # ===============================================
@@ -33,7 +45,8 @@ set(SUB_DIRS
   IO;
   Reconstruction;
   Settings;
-  Utils)
+  Utils
+)
 
 target_sources(${LIBCBCT} PUBLIC libcbct.h)
 foreach(DIR IN LISTS SUB_DIRS)
@@ -59,25 +72,13 @@ add_executable(${LIBCBCT_EXE} main.cpp)
 target_include_directories(
   ${LIBCBCT_EXE} PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${OpenCV_INCLUDE_DIRS})
+  ${OpenCV_INCLUDE_DIRS}
+)
 
 target_link_libraries(
   ${LIBCBCT_EXE} PRIVATE
   ${LIBCBCT}
-  ${OpenCV_LIBS})
-
-if (WITH_OPENMP)
-  target_link_libraries(
-    ${LIBCBCT_EXE} PRIVATE
-    OpenMP::OpenMP_CXX)
-endif()
-
-if (WITH_CUDA)
-  target_link_libraries(
-    ${LIBCBCT_EXE} PRIVATE
-    ${CUDA_LIBRARIES}
-    ${CUDA_cufft_LIBRARY})
-endif()
+)
 
 set_property(TARGET ${LIBCBCT_EXE} PROPERTY DEBUG_POSTFIX "-debug")
 

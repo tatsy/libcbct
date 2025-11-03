@@ -10,10 +10,10 @@
 #include "CudaUtils.h"
 
 __both__ inline float bilerp(float *const image, int width, int height, float x, float y) {
-    #ifndef __CUDACC__
-    using std::min;
+#ifndef __CUDACC__
     using std::max;
-    #endif
+    using std::min;
+#endif
     const int x0 = max(0, (int)x);
     const int y0 = max(0, (int)y);
     const int x1 = min((int)x + 1, width - 1);
