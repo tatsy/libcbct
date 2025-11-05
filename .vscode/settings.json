@@ -49,5 +49,26 @@
       "allowCompoundWords": true,
       "includeRegExpList": ["CStyleComment", "string"]
     }
-  ]
+  ],
+  // Python
+  "python.defaultInterpreterPath": "python",
+  "python.languageServer": "Default",
+  "flake8.enabled": false,
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.formatOnType": false,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports.isort": "never",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  "ruff.enable": true,
+  "ruff.lint.enable": true,
+  "ruff.configuration": "${workspaceFolder}/pyproject.toml",
+  "ruff.configurationPreference": "filesystemFirst",
+  "notebook.formatOnSave.enabled": true,
+  "notebook.formatOnCellExecution": false
 }

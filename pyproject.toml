@@ -1,0 +1,44 @@
+[project]
+name = "libcbct"
+version = "0.1.0"
+description = "A library for cone beam computed tomography (CBCT) reconstruction."
+authors = [{ name = "Tatsuya Yatagawa", email = "tatsy.mail@gmail.com" }]
+license = "CC-BY-SA-4.0"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=2.3.4",
+  "plyfile>=1.1.3",
+  "scikit-image>=0.25.2",
+  "tifffile>=2025.10.16",
+  "tqdm>=4.67.1",
+]
+
+[dependency-groups]
+dev = ["flake8-pyproject>=1.2.3", "mypy>=1.18.2", "ruff>=0.14.3"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+select = ["E", "W", "F"]
+ignore = []
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.isort]
+length-sort = true
+length-sort-straight = true
+
+[tool.mypy]
+python_version = "3.11"
+follow_imports = "silent"
+plugins = ["numpy.typing.mypy_plugin"]
+disallow_any_generics = true
+strict_optional = true
+check_untyped_defs = true
+allow_redefinition = true
