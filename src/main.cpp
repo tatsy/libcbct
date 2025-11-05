@@ -43,9 +43,7 @@ int main(int argc, char **argv) {
     LIBCBCT_DEBUG("Pixel size: (%f, %f)", pixelSizeX, pixelSizeY);
 
     // Import sinogram
-    Volume<float> sinogram(detWidth, detHeight, numberOfProj);
-    ImageSequenceImporter(clockwise).read("data/clip/data_%06d.tif", sinogram);
-
+    VolumeF32 sinogram = ImageSequenceImporter("data/clip", ".tif", clockwise).read();
     sinogram.forEach([freeRay](float v) -> float { return -std::log((v + 1.0f) / freeRay); });
 
     LIBCBCT_ASSERT(
@@ -58,7 +56,7 @@ int main(int argc, char **argv) {
     const int volSize = configs["size"].as<int>();
     LIBCBCT_DEBUG("Reconstruction volume size: %d", volSize);
 
-    FloatVolume tomogram;
+    VolumeF32 tomogram;
     Geometry geometry(vec2i(detWidth, detHeight), vec2f(pixelSizeX, pixelSizeY), vec3i(volSize, volSize, volSize), sod,
                       sdd);
 

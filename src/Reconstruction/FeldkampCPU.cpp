@@ -11,7 +11,7 @@
 #include "Common/ProgressBar.h"
 #include "Utils/ImageUtils.h"
 
-void FeldkampCPU::reconstruct(const FloatVolume &sinogram, FloatVolume &tomogram, const Geometry &geometry) const {
+void FeldkampCPU::reconstruct(const VolumeF32 &sinogram, VolumeF32 &tomogram, const Geometry &geometry) const {
     const int detWidth = sinogram.size<0>();
     const int detHeight = sinogram.size<1>();
     const int nProj = sinogram.size<2>();

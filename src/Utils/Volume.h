@@ -60,7 +60,7 @@ public:
         other.sizeX = 0;
         other.sizeY = 0;
         other.sizeZ = 0;
-        other.data = NULL;
+        other.data = nullptr;
 
         return *this;
     }
@@ -158,14 +158,19 @@ public:
 private:
     union {
         struct {
-            uint64_t sizeX, sizeY, sizeZ;
+            uint64_t sizeX;
+            uint64_t sizeY;
+            uint64_t sizeZ;
         };
         uint64_t sizes_[3];
     };
-    T *data = NULL;
+    T *data = nullptr;
 };
 
-using UInt16Volume = Volume<uint16_t>;
-using FloatVolume = Volume<float>;
+using VolumeU8 = Volume<uint8_t>;
+using VolumeU16 = Volume<uint16_t>;
+using VolumeU32 = Volume<uint32_t>;
+using VolumeF32 = Volume<float>;
+using VolumeF64 = Volume<double>;
 
 #endif  // LIBCBCT_VOLUME_H

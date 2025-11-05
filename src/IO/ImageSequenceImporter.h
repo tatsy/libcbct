@@ -9,15 +9,19 @@
 
 class LIBCBCT_API ImageSequenceImporter : public BaseImporter {
 public:
-    explicit ImageSequenceImporter(bool reverseOrder = false)
+    explicit ImageSequenceImporter(const std::string &folder, const std::string &extension, bool reverseOrder = false)
         : BaseImporter{}
+        , folder{ folder }
+        , extension{ extension }
         , reverseOrder{ reverseOrder } {
     }
     virtual ~ImageSequenceImporter() = default;
 
-    void read(const std::string &format, FloatVolume &sinogram) const override;
+    VolumeF32 read() const override;
 
 private:
+    std::string folder;
+    std::string extension;
     bool reverseOrder = false;
 };
 

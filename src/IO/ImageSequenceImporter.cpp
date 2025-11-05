@@ -1,6 +1,9 @@
 #define LIBCBCT_API_EXPORT
 #include "ImageSequenceImporter.h"
 
+#include <iostream>
+#include <vector>
+#include <filesystem>
 #include <opencv2/opencv.hpp>
 
 #include "Common/Logging.h"
@@ -8,41 +11,47 @@
 #include "Common/OpenMP.h"
 #include "Common/ProgressBar.h"
 
-void ImageSequenceImporter::read(const std::string &format, FloatVolume &sinogram) const {
-    int startIndex = 0;
-    int nImages = 0;
-    int width = 0;
-    int height = 0;
-    for (int i = 0;; i++) {
-        char filename[256];
-        sprintf(filename, format.c_str(), i);
-        filepath path(filename);
-        if (!path.exists()) {
-            if (i == 0) {
-                startIndex++;
-                continue;
-            }
-            break;
-        }
-        nImages++;
+namespace fs = std::filesystem;
 
-        if (width == 0 && height == 0) {
-            cv::Mat image = cv::imread(filename, cv::IMREAD_UNCHANGED);
-            width = image.cols;
-            height = image.rows;
+VolumeF32 ImageSequenceImporter::read() const {
+    // Get image file list
+    std::vector<std::string> fileList;
+    const fs::path folderPath(folder.c_str());
+    for (const auto &entry : fs::directory_iterator(folderPath)) {
+        if (fs::is_directory(entry.path())) {
+            continue;
+        }
+
+        const std::string ext = entry.path().extension().string();
+        if (ext == extension) {
+            fileList.push_back(entry.path().string());
         }
     }
 
-    sinogram = FloatVolume(width, height, nImages);
+    if (fileList.empty()) {
+        LIBCBCT_ERROR("No image files found in folder: %s", folder.c_str());
+    }
+
+    std::sort(fileList.begin(), fileList.end());
+
+    // Get image size
+    cv::Mat firstImage = cv::imread(fileList[0], cv::IMREAD_UNCHANGED);
+    if (firstImage.empty()) {
+        LIBCBCT_ERROR("failed to open image: %s", fileList[0].c_str());
+    }
+    const int width = firstImage.cols;
+    const int height = firstImage.rows;
+    const int nImages = static_cast<int>(fileList.size());
+
+    // Load images into sinogram volume
+    VolumeF32 sinogram(width, height, nImages);
+
     ProgressBar pbar(nImages);
     pbar.setDescription("IMPORT: ");
     OMP_PARALLEL_FOR(int i = 0; i < nImages; i++) {
-        char filename[256];
-        sprintf(filename, format.c_str(), startIndex + i);
-
-        cv::Mat image = cv::imread(filename, cv::IMREAD_UNCHANGED);
+        cv::Mat image = cv::imread(fileList[i], cv::IMREAD_UNCHANGED);
         if (image.empty()) {
-            LIBCBCT_ERROR("failed to open image: %s", filename);
+            LIBCBCT_ERROR("failed to open image: %s", fileList[i].c_str());
         }
 
         for (int y = 0; y < height; y++) {
@@ -53,4 +62,6 @@ void ImageSequenceImporter::read(const std::string &format, FloatVolume &sinogra
         }
         pbar.step();
     }
+
+    return sinogram;
 }

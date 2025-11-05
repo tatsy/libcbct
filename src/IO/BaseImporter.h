@@ -17,8 +17,7 @@ class LIBCBCT_API BaseImporter {
 public:
     BaseImporter() = default;
     virtual ~BaseImporter() = default;
-
-    virtual void read(const std::string &filename, FloatVolume &sinogram) const = 0;
+    virtual VolumeF32 read() const = 0;
 };
 
 #endif  // LIBCBCT_BASE_IMPORTER_H

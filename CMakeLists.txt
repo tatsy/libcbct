@@ -10,7 +10,7 @@ set(FETCHCONTENT_QUIET ON)
 option(WITH_CUDA "Build with CUDA support" OFF)
 option(WITH_OPENMP "Build with OpenMP support" OFF)
 option(BUILD_STATIC_LIBS "Build static libraries rather than shared libraries" OFF)
-option(LIBCBCT_BUILD_OPENCV_FROM_SOURCE "Build OpenCV from source" OFF)
+option(LIBCBCT_BUILD_OPENCV_FROM_SOURCE "Build OpenCV from source" ON)
 
 # ===============================================
 # Global build targets
@@ -42,8 +42,6 @@ if (OpenCV_FOUND)
 else()
   # Build OpenCV from source
   message(STATUS "Building OpenCV from source...")
-  set(OPENCV_BUILD_LIST "core;imgproc;imgcodecs;highgui" CACHE STRING "" FORCE)
-
   FetchContent_Declare(
     opencv
     GIT_REPOSITORY https://github.com/opencv/opencv
@@ -52,7 +50,7 @@ else()
     GIT_PROGRESS TRUE
   )
 
-  set(BUILD_LIST ${OPENCV_BUILD_LIST} CACHE STRING "" FORCE)
+  set(BUILD_LIST "core;imgproc;imgcodecs;highgui" CACHE STRING "" FORCE)
   set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
   set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
   set(BUILD_PERF_TEST OFF CACHE BOOL "" FORCE)
@@ -61,15 +59,15 @@ else()
   set(WITH_VTK OFF CACHE BOOL "" FORCE)
 
   FetchContent_MakeAvailable(opencv)
-  set(OpenCV_DIR ${opencv_BINARY_DIR}/lib/cmake/opencv4)
-  find_package(OpenCV REQUIRED CONFIG)
-  
-  mark_as_advanced(FETCHCONTENT_BASE_DIR)
-  mark_as_advanced(FETCHCONTENT_FULLY_DISCONNECTED)
-  mark_as_advanced(FETCHCONTENT_QUIET)
-  mark_as_advanced(FETCHCONTENT_SOURCE_DIR_opencv)
-  mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED)
-  mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_opencv)
+  set(OpenCV_INCLUDE_DIRS
+    ${opencv_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${opencv_SOURCE_DIR}/modules/core/include
+    ${opencv_SOURCE_DIR}/modules/highgui/include
+    ${opencv_SOURCE_DIR}/modules/imgproc/include
+    ${opencv_SOURCE_DIR}/modules/imgproc/include
+    ${opencv_SOURCE_DIR}/modules/imgcodecs/include
+  )
 endif()
 
 # ===============================================

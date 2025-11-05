@@ -44,7 +44,7 @@ __global__ void sliceBackProjectionKernel(int z, int i, Geometry &geometry, floa
     }
 }
 
-void FeldkampCUDA::reconstruct(const FloatVolume &sinogram, FloatVolume &tomogram, const Geometry &geometry) const {
+void FeldkampCUDA::reconstruct(const VolumeF32 &sinogram, VolumeF32 &tomogram, const Geometry &geometry) const {
     const int detWidth = sinogram.size<0>();
     const int detHeight = sinogram.size<1>();
     const int nProj = sinogram.size<2>();

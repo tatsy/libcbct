@@ -1,21 +1,21 @@
 #ifdef _MSC_VER
-  #pragma once
+#pragma once
 #endif
 
 #ifndef LIBCBCT_FELDKAMP_CUDA_H
-  #define LIBCBCT_FELDKAMP_CUDA_H
+#define LIBCBCT_FELDKAMP_CUDA_H
 
-  #include "ReconstructionBase.h"
+#include "ReconstructionBase.h"
 
 class LIBCBCT_API FeldkampCUDA : public ReconstructionBase {
 public:
-    FeldkampCUDA(RampFilter filter = RampFilter::RamLak)
+    FeldkampCUDA(RampFilter filter = RampFilter::SheppLogan)
         : ReconstructionBase()
         , filter(filter) {
     }
     ~FeldkampCUDA() = default;
 
-    void reconstruct(const FloatVolume &sinogram, FloatVolume &tomogram, const Geometry &geometry) const override;
+    void reconstruct(const VolumeF32 &sinogram, VolumeF32 &tomogram, const Geometry &geometry) const override;
 
 private:
     RampFilter filter;

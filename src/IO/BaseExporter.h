@@ -17,8 +17,7 @@ class LIBCBCT_API BaseExporter {
 public:
     BaseExporter() = default;
     virtual ~BaseExporter() = default;
-
-    virtual void write(const std::string &filename, FloatVolume &tomogram) const = 0;
+    virtual void write(const std::string &filename, const VolumeF32 &tomogram) const = 0;
 };
 
 #endif  // LIBCBCT_BASE_EXPORTER_H

@@ -12,7 +12,7 @@ public:
     RawVolumeExporter() = default;
     ~RawVolumeExporter() = default;
 
-    void write(const std::string &filename, FloatVolume &tomogram) const override;
+    void write(const std::string &filename, const VolumeF32 &tomogram) const override;
 };
 
 #endif  // LIBCBCT_RAW_VOLUME_EXPORTER_H

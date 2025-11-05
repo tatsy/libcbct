@@ -22,7 +22,7 @@ public:
     ReconstructionBase() = default;
     virtual ~ReconstructionBase() = default;
 
-    virtual void reconstruct(const FloatVolume &sinogram, FloatVolume &tomogram, const Geometry &geometry) const = 0;
+    virtual void reconstruct(const VolumeF32 &sinogram, VolumeF32 &tomogram, const Geometry &geometry) const = 0;
 
 protected:
 };
