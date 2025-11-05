@@ -7,6 +7,7 @@
 
 #include <cstring>
 #include <vector>
+#include <algorithm>
 #include <functional>
 
 #include "Common/Logging.h"
@@ -35,7 +36,7 @@ public:
         other.sizeX = 0;
         other.sizeY = 0;
         other.sizeZ = 0;
-        other.data = NULL;
+        other.data = nullptr;
     }
 
     virtual ~Volume() {

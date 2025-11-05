@@ -68,6 +68,12 @@ else()
     ${opencv_SOURCE_DIR}/modules/imgproc/include
     ${opencv_SOURCE_DIR}/modules/imgcodecs/include
   )
+  set(OpenCV_LIBS
+    opencv_core
+    opencv_imgproc
+    opencv_imgcodecs
+    opencv_highgui
+  )
 endif()
 
 # ===============================================
