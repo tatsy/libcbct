@@ -2,8 +2,6 @@
 #include "FeldkampCUDA.h"
 
 #include <cuda_runtime.h>
-#include <device_functions.h>
-#include <device_launch_parameters.h>
 #include <cufft.h>
 
 #define _USE_MATH_DEFINES

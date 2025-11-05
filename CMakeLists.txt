@@ -1,15 +1,16 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(LibCBCT LANGUAGES C CXX)
 
+include(CheckLanguage)
 include(FetchContent)
 set(FETCHCONTENT_QUIET ON)
 
 # ===============================================
 # Options
 # ===============================================
-option(WITH_CUDA "Build with CUDA support" OFF)
-option(WITH_OPENMP "Build with OpenMP support" OFF)
-option(BUILD_STATIC_LIBS "Build static libraries rather than shared libraries" OFF)
+option(LIBCBCT_WITH_CUDA "Build with CUDA support" OFF)
+option(LIBCBCT_WITH_OPENMP "Build with OpenMP support" OFF)
+option(LIBCBCT_BUILD_STATIC_LIBS "Build static libraries rather than shared libraries" OFF)
 option(LIBCBCT_BUILD_OPENCV_FROM_SOURCE "Build OpenCV from source" ON)
 
 # ===============================================
@@ -50,13 +51,14 @@ else()
     GIT_PROGRESS TRUE
   )
 
-  set(BUILD_LIST "core;imgproc;imgcodecs;highgui" CACHE STRING "" FORCE)
-  set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
-  set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-  set(BUILD_PERF_TEST OFF CACHE BOOL "" FORCE)
-  set(BUILD_JAVA OFF CACHE BOOL "" FORCE)
-  set(BUILD_PYTHON_BINDINGS OFF CACHE BOOL "" FORCE)
-  set(WITH_VTK OFF CACHE BOOL "" FORCE)
+  set(BUILD_LIST "core;imgproc;imgcodecs;highgui" CACHE INTERNAL "")
+  set(BUILD_TESTS OFF CACHE INTERNAL "")
+  set(BUILD_EXAMPLES OFF CACHE INTERNAL "")
+  set(BUILD_PERF_TEST OFF CACHE INTERNAL "")
+  set(BUILD_JAVA OFF CACHE INTERNAL "")
+  set(BUILD_PYTHON_BINDINGS OFF CACHE INTERNAL "")
+  set(WITH_IPP OFF CACHE INTERNAL "")
+  set(WITH_VTK OFF CACHE INTERNAL "")
 
   FetchContent_MakeAvailable(opencv)
   set(OpenCV_INCLUDE_DIRS
@@ -80,25 +82,32 @@ endif()
 # OpenMP
 # ===============================================
 
-if (WITH_OPENMP)
+if (LIBCBCT_WITH_OPENMP)
   find_package(OpenMP REQUIRED)
   if (OPENMP_FOUND)
-    message(STATUS "OpenMP found!")
+    message(STATUS "OpenMP found: ${OpenMP_CXX_FLAGS}")
   endif()
 endif()
 
 # ===============================================
 # CUDA
 # ===============================================
-if (WITH_CUDA)
-  enable_language(CUDA)
-  if (CUDA_FOUND)
+if (LIBCBCT_WITH_CUDA)
+  check_language(CUDA)
+  if (CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
-    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    add_definitions("-DLIBCBCT_WITH_CUDA")
+
     set(CMAKE_CUDA_STANDARD 11)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     message(STATUS "cuFFT: ${CUDA_cufft_LIBRARY}")
+
+    message(STATUS "INSTALLING EXTENSIONS WITH CUDA!")
+    string(REGEX REPLACE ".[0-9][0-9]|\\." "" CUDA_V ${CMAKE_CUDA_COMPILER_VERSION})
+    message(STATUS "CMAKE_CUDA_COMPILER = ${CMAKE_CUDA_COMPILER}")
+    message(STATUS "CMAKE_CUDA_COMPILER_ID = ${CMAKE_CUDA_COMPILER_ID}")
+    message(STATUS "CMAKE_CUDA_COMPILER_VERSION = ${CUDA_V}")
   endif()
-  add_definitions("-DLIBCBCT_WITH_CUDA")
 endif()
 
 # ===============================================

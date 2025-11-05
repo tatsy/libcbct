@@ -82,13 +82,15 @@ public:
         LIBCBCT_ASSERT(x >= 0 && x < sizeX && y >= 0 && y < sizeY && z >= 0 && z < sizeZ,
                        "Volume index out of bounds!");
 
-        x = std::clamp(x - 0.5f, 0.0f, (float)sizeX);
-        y = std::clamp(y - 0.5f, 0.0f, (float)sizeY);
-        z = std::clamp(z - 0.5f, 0.0f, (float)sizeZ);
+        using std::min, std::max;
 
-        const int ix = std::min((int)x, (int)sizeX - 2);
-        const int iy = std::min((int)y, (int)sizeY - 2);
-        const int iz = std::min((int)z, (int)sizeZ - 2);
+        x = max(0.0f, min(x - 0.5f, (float)sizeX));
+        y = max(0.0f, min(y - 0.5f, (float)sizeY));
+        z = max(0.0f, min(z - 0.5f, (float)sizeZ));
+
+        const int ix = min((int)x, (int)sizeX - 2);
+        const int iy = min((int)y, (int)sizeY - 2);
+        const int iz = min((int)z, (int)sizeZ - 2);
         const float u = x - ix;
         const float v = y - iy;
         const float w = z - iz;

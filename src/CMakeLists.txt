@@ -1,7 +1,7 @@
 # ===============================================
 # add libcbct library
 # ===============================================
-if (BUILD_STATIC_LIBS)
+if (LIBCBCT_BUILD_STATIC_LIBS)
   add_library(${LIBCBCT} STATIC)
 else()
   add_library(${LIBCBCT} SHARED)
@@ -18,14 +18,14 @@ target_link_libraries(
   ${OpenCV_LIBS}
 )
 
-if (WITH_OPENMP)
+if (LIBCBCT_WITH_OPENMP)
   target_link_libraries(
     ${LIBCBCT} PUBLIC
     OpenMP::OpenMP_CXX
   )
 endif()
 
-if (WITH_CUDA)
+if (LIBCBCT_WITH_CUDA)
   target_link_libraries(
     ${LIBCBCT} PUBLIC
     ${CUDA_LIBRARIES}
@@ -51,7 +51,7 @@ foreach(DIR IN LISTS SUB_DIRS)
     ${CMAKE_CURRENT_SOURCE_DIR}/${DIR}/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/${DIR}/*.h)
 
-  if (WITH_CUDA)
+  if (LIBCBCT_WITH_CUDA)
     file(GLOB CUDA_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/${DIR}/*.cu)
     list(APPEND SUB_SOURCES ${CUDA_SOURCES})
