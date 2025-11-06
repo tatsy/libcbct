@@ -7,7 +7,6 @@
 #include <opencv2/opencv.hpp>
 
 #include "Common/Logging.h"
-#include "Common/Path.h"
 #include "Common/OpenMP.h"
 #include "Common/ProgressBar.h"
 

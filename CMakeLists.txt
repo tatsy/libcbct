@@ -11,7 +11,7 @@ set(FETCHCONTENT_QUIET ON)
 option(LIBCBCT_WITH_CUDA "Build with CUDA support" OFF)
 option(LIBCBCT_WITH_OPENMP "Build with OpenMP support" OFF)
 option(LIBCBCT_BUILD_STATIC_LIBS "Build static libraries rather than shared libraries" OFF)
-option(LIBCBCT_BUILD_OPENCV_FROM_SOURCE "Build OpenCV from source" ON)
+option(LIBCBCT_BUILD_OPENCV_FROM_SOURCE "Build OpenCV from source" OFF)
 
 # ===============================================
 # Global build targets

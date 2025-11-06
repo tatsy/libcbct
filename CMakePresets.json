@@ -17,7 +17,7 @@
       },
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
-        "WITH_OPENMP": "ON"
+        "LIBCBCT_WITH_OPENMP": "ON"
       },
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
@@ -34,7 +34,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
-        "WITH_OPENMP": "OFF"
+        "LIBCBCT_WITH_OPENMP": "OFF"
       },
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
@@ -51,7 +51,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
-        "WITH_OPENMP": "ON"
+        "LIBCBCT_WITH_OPENMP": "ON"
       },
       "vendor": {
         "microsoft.com/VisualStudioSettings/CMake/1.0": {

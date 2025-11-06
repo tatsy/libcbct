@@ -42,13 +42,13 @@ __global__ void sliceBackProjectionKernel(int z, int i, Geometry &geometry, floa
     }
 }
 
-void FeldkampCUDA::reconstruct(const VolumeF32 &sinogram, VolumeF32 &tomogram, const Geometry &geometry) const {
+VolumeF32 FeldkampCUDA::reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const {
     const int detWidth = sinogram.size<0>();
     const int detHeight = sinogram.size<1>();
     const int nProj = sinogram.size<2>();
     const vec3i sinoSize(detWidth, detHeight, nProj);
     const vec3i volSize = geometry.volSize;
-    tomogram.resize(volSize.x, volSize.y, volSize.z);
+    VolumeF32 tomogram(volSize.x, volSize.y, volSize.z);
 
     Geometry *devGeom;
     CUDA_CHECK(cudaMalloc(&devGeom, sizeof(Geometry)));
@@ -130,4 +130,6 @@ void FeldkampCUDA::reconstruct(const VolumeF32 &sinogram, VolumeF32 &tomogram, c
     CUDA_CHECK(cufftDestroy(planForward));
     CUDA_CHECK(cufftDestroy(planInverse));
     CUDA_SYNC_CHECK();
+
+    return tomogram;
 }

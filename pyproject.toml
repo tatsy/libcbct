@@ -4,8 +4,10 @@ version = "0.1.0"
 description = "A library for cone beam computed tomography (CBCT) reconstruction."
 authors = [{ name = "Tatsuya Yatagawa", email = "tatsy.mail@gmail.com" }]
 license = "CC-BY-SA-4.0"
+license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.11"
+urls = { "Repository" = "https://github.com/tatsy/libcbct" }
 dependencies = [
   "numpy>=2.3.4",
   "plyfile>=1.1.3",

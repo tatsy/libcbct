@@ -21,8 +21,7 @@ class LIBCBCT_API ReconstructionBase {
 public:
     ReconstructionBase() = default;
     virtual ~ReconstructionBase() = default;
-
-    virtual void reconstruct(const VolumeF32 &sinogram, VolumeF32 &tomogram, const Geometry &geometry) const = 0;
+    virtual VolumeF32 reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const = 0;
 
 protected:
 };

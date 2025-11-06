@@ -14,8 +14,7 @@ public:
         , filter(filter) {
     }
     ~FeldkampCPU() = default;
-
-    void reconstruct(const VolumeF32 &sinogram, VolumeF32 &tomogram, const Geometry &geometry) const override;
+    VolumeF32 reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const override;
 
 private:
     RampFilter filter;

@@ -8,7 +8,6 @@
 #include "Common/Api.h"
 #include "Common/Logging.h"
 #include "Common/OpenMP.h"
-#include "Common/Path.h"
 #include "Common/ProgressBar.h"
 
 #include "Geometry/GeometryBase.h"

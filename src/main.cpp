@@ -27,11 +27,13 @@ int main(int argc, char **argv) {
         std::cout << options.help() << std::endl;
         return 0;
     }
+    LIBCBCT_DEBUG("OpenMP threads: %d", omp_get_max_threads());
 
     // Read device parameters
     fs::path configPath(configs["config"].as<std::string>());
     JsonSettingImporter config;
     config.read(configPath.string());
+    LIBCBCT_DEBUG("Load config file from %s", configPath.string().c_str());
 
     const float sod = config.getFloat("SOD");
     const float sdd = config.getFloat("SDD");
@@ -42,12 +44,12 @@ int main(int argc, char **argv) {
     const int numberOfProj = config.getInt("NumberOfProj");
     const bool clockwise = config.getInt("Clockwise", 1) != 0;
     const float freeRay = 65535.0f;  // Assuming 16-bit images
-    LIBCBCT_DEBUG("SOD: %f", sod);
-    LIBCBCT_DEBUG("SDD: %f", sdd);
-    LIBCBCT_DEBUG("Pixel size: (%f, %f)", pixelSizeX, pixelSizeY);
+    LIBCBCT_DEBUG("SOD: %f mm", sod);
+    LIBCBCT_DEBUG("SDD: %f mm", sdd);
+    LIBCBCT_DEBUG("Pixel size: (%f mm, %f mm)", pixelSizeX, pixelSizeY);
 
     // Import sinogram
-    const fs::path imagePath = configPath.parent_path();
+    const fs::path imagePath = configPath.parent_path() / "projections";
     VolumeF32 sinogram = ImageSequenceImporter(imagePath.string(), ".tif", clockwise).read();
     sinogram.forEach([freeRay](float v) -> float { return -std::log((v + 1.0f) / freeRay); });
 
@@ -59,19 +61,19 @@ int main(int argc, char **argv) {
 
     // Setup projection geometry
     const int volSize = configs["size"].as<int>();
-    LIBCBCT_DEBUG("Reconstruction volume size: %d", volSize);
+    const float voxelSize = pixelSizeY * (sod / sdd) * ((float)detHeight / (float)volSize);
+    LIBCBCT_DEBUG("Reconstruction volume size: %d (%f mm/voxel)", volSize, voxelSize);
 
-    VolumeF32 tomogram;
     Geometry geometry(vec2i(detWidth, detHeight), vec2f(pixelSizeX, pixelSizeY), vec3i(volSize, volSize, volSize), sod,
                       sdd);
 
 // // Reconstruction
 #if defined(LIBCBCT_WITH_CUDA)
     FeldkampCUDA fdk(RampFilter::SheppLogan);
-    fdk.reconstruct(sinogram, tomogram, geometry);
+    VolumeF32 tomogram = fdk.reconstruct(sinogram, geometry);
 #else
     FeldkampCPU fdk(RampFilter::SheppLogan);
-    fdk.reconstruct(sinogram, tomogram, geometry);
+    VolumeF32 tomogram = fdk.reconstruct(sinogram, geometry);
 #endif  // LIBCBCT_WITH_CUDA
 
     // Normalize CT values
@@ -81,8 +83,10 @@ int main(int argc, char **argv) {
     tomogram.forEach([maxVal](float x) -> float { return x / maxVal; });
 
     // Export tomogram
+    const fs::path outputPath = configPath.parent_path() / "output" / "volume.raw";
+    fs::create_directories(outputPath.parent_path());
     RawVolumeExporter exporter;
-    exporter.write("output.raw", tomogram);
+    exporter.write(outputPath.string(), tomogram);
 
     // Preview center slice
     cv::Mat slice(volSize, volSize, CV_32F, tomogram.ptr() + (volSize * volSize * volSize / 2));

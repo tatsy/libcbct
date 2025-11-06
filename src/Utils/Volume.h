@@ -6,12 +6,13 @@
 #define LIBCBCT_VOLUME_H
 
 #include <cstring>
-#include <vector>
+#include <memory>
 #include <algorithm>
 #include <functional>
 
 #include "Common/Logging.h"
 #include "Common/OpenMP.h"
+#include "Utils/ImageUtils.h"
 
 template <typename T>
 class Volume {
@@ -25,30 +26,28 @@ public:
 
     Volume(const Volume<T> &other)
         : Volume(other.sizeX, other.sizeY, other.sizeZ) {
-        std::memcpy(data, other.data, sizeof(T) * sizeX * sizeY * sizeZ);
+        std::memcpy(data.get(), other.data.get(), sizeof(T) * sizeX * sizeY * sizeZ);
     }
 
     Volume(Volume<T> &&other)
         : sizeX(other.sizeX)
         , sizeY(other.sizeY)
         , sizeZ(other.sizeZ)
-        , data(other.data) {
+        , data(std::move(other.data)) {
         other.sizeX = 0;
         other.sizeY = 0;
         other.sizeZ = 0;
         other.data = nullptr;
     }
 
-    virtual ~Volume() {
-        delete[] data;
-    }
+    virtual ~Volume() = default;
 
     Volume &operator=(const Volume<T> &other) {
         sizeX = other.sizeX;
         sizeY = other.sizeY;
         sizeZ = other.sizeZ;
         this->resize(sizeX, sizeY, sizeZ);
-        std::memcpy(data, other.data, sizeof(T) * sizeX * sizeY * sizeZ);
+        std::memcpy(data.get(), other.data.get(), sizeof(T) * sizeX * sizeY * sizeZ);
         return *this;
     }
 
@@ -56,7 +55,7 @@ public:
         sizeX = other.sizeX;
         sizeY = other.sizeY;
         sizeZ = other.sizeZ;
-        data = other.data;
+        data = std::move(other.data);
 
         other.sizeX = 0;
         other.sizeY = 0;
@@ -82,32 +81,40 @@ public:
         LIBCBCT_ASSERT(x >= 0 && x < sizeX && y >= 0 && y < sizeY && z >= 0 && z < sizeZ,
                        "Volume index out of bounds!");
 
-        using std::min, std::max;
+        const float xf = floorf(x);
+        const float yf = floorf(y);
+        const float zf = floorf(z);
 
-        x = max(0.0f, min(x - 0.5f, (float)sizeX));
-        y = max(0.0f, min(y - 0.5f, (float)sizeY));
-        z = max(0.0f, min(z - 0.5f, (float)sizeZ));
-
-        const int ix = min((int)x, (int)sizeX - 2);
-        const int iy = min((int)y, (int)sizeY - 2);
-        const int iz = min((int)z, (int)sizeZ - 2);
+        const int ix = clampi((int)xf, 0, (int)sizeX - 2);
+        const int iy = clampi((int)yf, 0, (int)sizeY - 2);
+        const int iz = clampi((int)zf, 0, (int)sizeZ - 2);
         const float u = x - ix;
         const float v = y - iy;
         const float w = z - iz;
 
-        const float v00 = (1.0f - u) * (*this)(ix, iy, iz) + u * (*this)(ix + 1, iy, iz);
-        const float v01 = (1.0f - u) * (*this)(ix, iy, iz + 1) + u * (*this)(ix + 1, iy, iz + 1);
-        const float v10 = (1.0f - u) * (*this)(ix, iy + 1, iz) + u * (*this)(ix + 1, iy + 1, iz);
-        const float v11 = (1.0f - u) * (*this)(ix, iy + 1, iz + 1) + u * (*this)(ix + 1, iy + 1, iz + 1);
+        const uint64_t base = (uint64_t)iz * sizeY * sizeX + (uint64_t)iy * sizeX + (uint64_t)ix;
+        const float v000 = data[base];
+        const float v001 = data[base + 1];
+        const float v010 = data[base + sizeX];
+        const float v011 = data[base + sizeX + 1];
+        const float v100 = data[base + sizeX * sizeY];
+        const float v101 = data[base + sizeX * sizeY + 1];
+        const float v110 = data[base + sizeX * sizeY + sizeX];
+        const float v111 = data[base + sizeX * sizeY + sizeX + 1];
 
-        const float v0 = (1.0f - v) * v00 + v * v10;
-        const float v1 = (1.0f - v) * v01 + v * v11;
+        const float v00 = fmaf(u, (v001 - v000), v000);
+        const float v10 = fmaf(u, (v011 - v010), v010);
+        const float v01 = fmaf(u, (v101 - v100), v100);
+        const float v11 = fmaf(u, (v111 - v110), v110);
 
-        return (1.0f - w) * v0 + w * v1;
+        const float v0 = fmaf(v, (v10 - v00), v00);
+        const float v1 = fmaf(v, (v11 - v01), v01);
+
+        return fmaf(w, (v1 - v0), v0);
     }
 
     T *const ptr() const {
-        return data;
+        return data.get();
     }
 
     void forEach(const typename std::function<T(T)> &func) {
@@ -121,7 +128,9 @@ public:
     }
 
     T reduce(const typename std::function<T(T, T)> &func, const T &init) const {
-        std::vector<T> buf(sizeZ, init);
+        auto buf = std::make_unique<T[]>(sizeZ);
+        std::fill_n(buf.get(), sizeZ, init);
+
         OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
             for (int y = 0; y < sizeY; y++) {
                 for (int x = 0; x < sizeX; x++) {
@@ -148,13 +157,13 @@ public:
         this->sizeY = sizeY;
         this->sizeZ = sizeZ;
 
-        if (data != NULL) {
-            delete[] data;
+        if (!data) {
+            data.reset(nullptr);
         }
 
         if (sizeX * sizeY * sizeZ != 0) {
-            data = new T[sizeX * sizeY * sizeZ];
-            std::memset(data, 0, sizeof(T) * sizeX * sizeY * sizeZ);
+            data = std::make_unique<T[]>(sizeX * sizeY * sizeZ);
+            std::memset(data.get(), 0, sizeof(T) * sizeX * sizeY * sizeZ);
         }
     }
 
@@ -167,7 +176,7 @@ private:
         };
         uint64_t sizes_[3];
     };
-    T *data = nullptr;
+    std::unique_ptr<T[]> data = nullptr;
 };
 
 using VolumeU8 = Volume<uint8_t>;
