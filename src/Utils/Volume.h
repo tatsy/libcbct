@@ -7,6 +7,8 @@
 
 #include <cstring>
 #include <memory>
+#include <tuple>
+#include <vector>
 #include <algorithm>
 #include <functional>
 
@@ -145,6 +147,44 @@ public:
         }
 
         return ret;
+    }
+
+    T getMin() const {
+        return reduce([](T a, T b) -> T { return std::min(a, b); }, std::numeric_limits<T>::infinity());
+    }
+
+    T getMax() const {
+        const float init = std::is_signed_v<T> ? -std::numeric_limits<T>::infinity() : 0;
+        return reduce([](T a, T b) -> T { return std::max(a, b); }, init);
+    }
+
+    std::tuple<T, T> getMinMax() const {
+        std::vector<T> localMins(sizeZ);
+        std::vector<T> localMaxs(sizeZ);
+        OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
+            T localMin = std::numeric_limits<T>::infinity();
+            T localMax = std::is_signed_v<T> ? -std::numeric_limits<T>::infinity() : 0;
+
+            for (int y = 0; y < sizeY; y++) {
+                for (int x = 0; x < sizeX; x++) {
+                    const T val = (*this)(x, y, z);
+                    localMin = std::min(localMin, val);
+                    localMax = std::max(localMax, val);
+                }
+            }
+
+            localMins[z] = localMin;
+            localMaxs[z] = localMax;
+        }
+
+        T minVal = std::numeric_limits<T>::infinity();
+        T maxVal = std::is_signed_v<T> ? -std::numeric_limits<T>::infinity() : 0;
+        for (int z = 0; z < sizeZ; z++) {
+            minVal = std::min(minVal, localMins[z]);
+            maxVal = std::max(maxVal, localMaxs[z]);
+        }
+
+        return std::make_tuple(minVal, maxVal);
     }
 
     template <int Dim>

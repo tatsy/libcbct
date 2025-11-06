@@ -15,6 +15,13 @@
 
 namespace fs = std::filesystem;
 
+static void onTrackbar(int pos, void *userdata) {
+    const VolumeF32 &tomogram = *(VolumeF32 *)userdata;
+    const int volSize = tomogram.size<0>();
+    const cv::Mat slice(volSize, volSize, CV_32FC1, tomogram.ptr() + (volSize * volSize * pos));
+    cv::imshow("volume", slice);
+}
+
 int main(int argc, char **argv) {
     // Parse command line options
     cxxopts::Options options("cbct_ext");
@@ -50,6 +57,10 @@ int main(int argc, char **argv) {
 
     // Import sinogram
     const fs::path imagePath = configPath.parent_path() / "projections";
+    if (!fs::exists(imagePath)) {
+        LIBCBCT_ERROR("Projection folder does not exist: %s", imagePath.string().c_str());
+    }
+
     VolumeF32 sinogram = ImageSequenceImporter(imagePath.string(), ".tif", clockwise).read();
     sinogram.forEach([freeRay](float v) -> float { return -std::log((v + 1.0f) / freeRay); });
 
@@ -77,20 +88,23 @@ int main(int argc, char **argv) {
 #endif  // LIBCBCT_WITH_CUDA
 
     // Normalize CT values
-    const float maxVal = tomogram.reduce([](float a, float b) -> float { return std::max(a, b); }, -(float)FLT_MAX);
-    LIBCBCT_DEBUG("Max value: %f", maxVal);
+    const auto [minVal, maxVal] = tomogram.getMinMax();
+    LIBCBCT_DEBUG("min=%f, max=%f", minVal, maxVal);
 
-    tomogram.forEach([maxVal](float x) -> float { return x / maxVal; });
+    tomogram.forEach([minVal, maxVal](float x) { return (x - minVal) / (maxVal - minVal); });
 
     // Export tomogram
     const fs::path outputPath = configPath.parent_path() / "output" / "volume.raw";
     fs::create_directories(outputPath.parent_path());
     RawVolumeExporter exporter;
     exporter.write(outputPath.string(), tomogram);
+    LIBCBCT_DEBUG("Reconstructed volume saved: %s", outputPath.string().c_str());
 
-    // Preview center slice
-    cv::Mat slice(volSize, volSize, CV_32F, tomogram.ptr() + (volSize * volSize * volSize / 2));
-    cv::imshow("center slice", slice);
+    // Preview
+    cv::namedWindow("volume", cv::WINDOW_AUTOSIZE);
+    cv::createTrackbar("#slice", "volume", nullptr, volSize - 1, onTrackbar, &tomogram);
+    onTrackbar(volSize / 2, &tomogram);
+
     cv::waitKey(0);
     cv::destroyAllWindows();
 }

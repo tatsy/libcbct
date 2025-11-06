@@ -51,7 +51,8 @@ void LIBCBCT_WARN(const char *format, Args... args) {
 
 template <typename... Args>
 void LIBCBCT_ERROR(const char *format, Args... args) {
-    throw std::runtime_error(STR_FMT(format, args...));
+    std::cerr << FG_RED << "[ERROR] " << FG_NC << STR_FMT(format, args...) << std::endl;
+    std::abort();
 }
 
 // -----------------------------------------------------------------------------
@@ -59,11 +60,11 @@ void LIBCBCT_ERROR(const char *format, Args... args) {
 // -----------------------------------------------------------------------------
 
 #ifndef __FUNCTION_NAME__
-#    if defined(_WIN32) || defined(__WIN32__)
-#        define __FUNCTION_NAME__ __FUNCTION__
-#    else
-#        define __FUNCTION_NAME__ __func__
-#    endif
+#if defined(_WIN32) || defined(__WIN32__)
+#define __FUNCTION_NAME__ __FUNCTION__
+#else
+#define __FUNCTION_NAME__ __func__
+#endif
 #endif
 
 inline std::string ASRT_LABEL(const char *predicate, const char *file, int line, const char *funcname) {
@@ -71,17 +72,17 @@ inline std::string ASRT_LABEL(const char *predicate, const char *file, int line,
 }
 
 #if !defined(LIBCBCT_DISABLE_ASSERT)
-#    define LIBCBCT_ASSERT(PREDICATE, ...)                                                                 \
-        do {                                                                                             \
-            if (!(PREDICATE)) {                                                                          \
-                std::cerr << ASRT_LABEL(#PREDICATE, __FILE__, __LINE__, __FUNCTION_NAME__) << std::endl; \
-                std::abort();                                                                            \
-            }                                                                                            \
-        } while (false)
-#else        // LIBCBCT_DISABLE_ASSERT
-#    define LIBCBCT_ASSERT(PREDICATE, ...) \
-        do {                             \
-        } while (false)
-#endif        // LIBCBCT_DISABLE_ASSERT
+#define LIBCBCT_ASSERT(PREDICATE, ...)                                                               \
+    do {                                                                                             \
+        if (!(PREDICATE)) {                                                                          \
+            std::cerr << ASRT_LABEL(#PREDICATE, __FILE__, __LINE__, __FUNCTION_NAME__) << std::endl; \
+            std::abort();                                                                            \
+        }                                                                                            \
+    } while (false)
+#else  // LIBCBCT_DISABLE_ASSERT
+#define LIBCBCT_ASSERT(PREDICATE, ...) \
+    do {                               \
+    } while (false)
+#endif  // LIBCBCT_DISABLE_ASSERT
 
 #endif  // LIBCBCT_LOGGING_H
