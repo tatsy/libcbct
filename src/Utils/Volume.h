@@ -115,7 +115,7 @@ public:
         return fmaf(w, (v1 - v0), v0);
     }
 
-    T *const ptr() const {
+    T *ptr() const {
         return data.get();
     }
 
