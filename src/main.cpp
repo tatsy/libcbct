@@ -6,11 +6,14 @@
 #include <vector>
 #include <atomic>
 #include <mutex>
+#include <filesystem>
 
 #include <cxxopts.hpp>
 #include <opencv2/opencv.hpp>
 
 #include "libcbct.h"
+
+namespace fs = std::filesystem;
 
 int main(int argc, char **argv) {
     // Parse command line options
@@ -26,8 +29,9 @@ int main(int argc, char **argv) {
     }
 
     // Read device parameters
+    fs::path configPath(configs["config"].as<std::string>());
     JsonSettingImporter config;
-    config.read(configs["config"].as<std::string>());
+    config.read(configPath.string());
 
     const float sod = config.getFloat("SOD");
     const float sdd = config.getFloat("SDD");
@@ -43,7 +47,8 @@ int main(int argc, char **argv) {
     LIBCBCT_DEBUG("Pixel size: (%f, %f)", pixelSizeX, pixelSizeY);
 
     // Import sinogram
-    VolumeF32 sinogram = ImageSequenceImporter("data/clip", ".tif", clockwise).read();
+    const fs::path imagePath = configPath.parent_path();
+    VolumeF32 sinogram = ImageSequenceImporter(imagePath.string(), ".tif", clockwise).read();
     sinogram.forEach([freeRay](float v) -> float { return -std::log((v + 1.0f) / freeRay); });
 
     LIBCBCT_ASSERT(

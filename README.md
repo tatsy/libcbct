@@ -1,4 +1,3 @@
-LibCBCT
-===
+# LibCBCT
 
-[![Ubuntu CI](https://github.com/tatsy/libcbct/actions/workflows/ubuntu.yaml/badge.svg)](https://github.com/tatsy/libcbct/actions/workflows/ubuntu.yaml)
+[![Build](https://github.com/tatsy/libcbct/actions/workflows/build.yaml/badge.svg)](https://github.com/tatsy/libcbct/actions/workflows/build.yaml)

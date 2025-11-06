@@ -24,12 +24,27 @@ set(LIBCBCT_EXE "cbct_exe")
 # ===============================================
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 if (MSVC)
+  add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/utf-8>")
+  add_compile_options("$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/utf-8>")
   add_definitions("-D_CRT_SECURE_NO_WARNINGS")
   add_definitions("-DNOMINMAX")
 else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-security")
 endif()
+
+# ===============================================
+# Output directories
+# ===============================================
+foreach(CONFIG_TYPE Debug Release RelWithDebInfo MinSizeRel)
+  string(TOUPPER ${CONFIG_TYPE} CONFIG)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CONFIG} ${CMAKE_BINARY_DIR}/lib)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${CONFIG} ${CMAKE_BINARY_DIR}/bin)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG} ${CMAKE_BINARY_DIR}/bin)
+endforeach()
+set(CMAKE_DEBUG_POSTFIX "-debug")
 
 # ===============================================
 # OpenCV
@@ -70,12 +85,6 @@ else()
     ${opencv_SOURCE_DIR}/modules/imgproc/include
     ${opencv_SOURCE_DIR}/modules/imgcodecs/include
   )
-  set(OpenCV_LIBS
-    opencv_core
-    opencv_imgproc
-    opencv_imgcodecs
-    opencv_highgui
-  )
 endif()
 
 # ===============================================
@@ -107,19 +116,13 @@ if (LIBCBCT_WITH_CUDA)
     message(STATUS "CMAKE_CUDA_COMPILER = ${CMAKE_CUDA_COMPILER}")
     message(STATUS "CMAKE_CUDA_COMPILER_ID = ${CMAKE_CUDA_COMPILER_ID}")
     message(STATUS "CMAKE_CUDA_COMPILER_VERSION = ${CUDA_V}")
+  else()
+    message(WARNING "NO CUDA INSTALLATION FOUND, TRYING TO INSTALL CPU VERSION ONLY!")
+    set(LIBCBCT_WITH_CUDA OFF)
   endif()
 endif()
 
-# ===============================================
-# Output directories
-# ===============================================
-foreach(CONFIG_TYPE Debug Release RelWithDebInfo MinSizeRel)
-  string(TOUPPER ${CONFIG_TYPE} CONFIG)
-  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${CONFIG} ${CMAKE_BINARY_DIR}/lib)
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${CONFIG} ${CMAKE_BINARY_DIR}/bin)
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG} ${CMAKE_BINARY_DIR}/bin)
-endforeach()
-set(CMAKE_DEBUG_POSTFIX "-debug")
+
 
 # ===============================================
 # Submodules

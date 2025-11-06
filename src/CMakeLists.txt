@@ -15,7 +15,10 @@ target_include_directories(
 
 target_link_libraries(
   ${LIBCBCT} PUBLIC
-  ${OpenCV_LIBS}
+  opencv_core
+  opencv_imgproc
+  opencv_imgcodecs
+  opencv_highgui
 )
 
 if (LIBCBCT_WITH_OPENMP)
