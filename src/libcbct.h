@@ -6,6 +6,7 @@
 #define LIBCBCT_H
 
 #include "Common/Api.h"
+#include "Common/Constants.h"
 #include "Common/Logging.h"
 #include "Common/OpenMP.h"
 #include "Common/ProgressBar.h"

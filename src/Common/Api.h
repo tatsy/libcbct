@@ -21,4 +21,12 @@
 #define LIBCBCT_API
 #endif
 
+#else
+#if !defined(__noinline)
+#define __noinline __attribute__((noinline))
+#endif
+#if !defined(__forceinline)
+#define __forceinline inline __attribute__((always_inline))
+#endif
+
 #endif  // LIBCBCT_API_H

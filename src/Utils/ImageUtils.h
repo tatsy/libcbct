@@ -7,16 +7,13 @@
 
 #include <math.h>
 
+#include "Common/Api.h"
 #include "CudaUtils.h"
 
 #ifdef __CUDACC__
 #define __HOST_DEVICE__ __host__ __device__ __forceinline__
 #else
-#ifdef _MSC_VER
 #define __HOST_DEVICE__ __forceinline
-#else
-#define __HOST_DEVICE__ __attribute__((always_inline)) inline
-#endif
 #endif
 
 __HOST_DEVICE__ int clampi(int v, int lo, int hi) {

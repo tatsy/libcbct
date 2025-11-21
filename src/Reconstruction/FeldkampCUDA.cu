@@ -7,6 +7,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include "Common/Constants.h"
 #include "Utils/CudaUtils.h"
 #include "Utils/ImageUtils.h"
 #include "Common/ProgressBar.h"
@@ -21,7 +22,7 @@ __global__ void rampFilterKernel(vec2f *buffer, int detWidth, int detHeight, Ram
         if (filter == RampFilter::RamLak) {
             buffer[y * detWidth + x] *= fabsf(q);
         } else if (filter == RampFilter::SheppLogan) {
-            buffer[y * detWidth + x] *= (2.0f / M_PI) * fabsf(sinf(0.5f * M_PI * q));
+            buffer[y * detWidth + x] *= (2.0f * (float)libcbct::kOneOverPi) * fabsf(sinf((float)libcbct::kHalfPi * q));
         } else {
             asm("trap;");
         }
@@ -33,7 +34,7 @@ __global__ void sliceBackProjectionKernel(int z, int i, Geometry &geometry, floa
     const int x = blockIdx.x * blockDim.x + threadIdx.x;
     const int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= 0 && y >= 0 && x < volSize.x && y < volSize.y) {
-        const float theta = 2.0f * (float)M_PI * i / sinoSize.z;
+        const float theta = (float)libcbct::kTwoPi * i / sinoSize.z;
         const vec3f uvw = vox2pix(vec3i(x, y, z), theta, geometry);
         if (uvw.x >= 0 && uvw.y >= 0 && uvw.x < sinoSize.x && uvw.y < sinoSize.y) {
             const float val = bilerp(image, sinoSize.x, sinoSize.y, uvw.x - 0.5f, uvw.y - 0.5f);
