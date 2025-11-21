@@ -88,7 +88,8 @@ int main(int argc, char **argv) {
 #endif  // LIBCBCT_WITH_CUDA
 
     // Normalize CT values
-    const auto [minVal, maxVal] = tomogram.getMinMax();
+    float minVal, maxVal;
+    std::tie(minVal, maxVal) = tomogram.getMinMax();
     LIBCBCT_DEBUG("min=%f, max=%f", minVal, maxVal);
 
     tomogram.forEach([minVal, maxVal](float x) { return (x - minVal) / (maxVal - minVal); });
