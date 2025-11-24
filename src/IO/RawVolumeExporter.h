@@ -5,6 +5,9 @@
 #ifndef LIBCBCT_RAW_VOLUME_EXPORTER_H
 #define LIBCBCT_RAW_VOLUME_EXPORTER_H
 
+#include <iostream>
+#include <fstream>
+
 #include "BaseExporter.h"
 
 class LIBCBCT_API RawVolumeExporter : public BaseExporter {

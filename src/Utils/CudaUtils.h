@@ -5,7 +5,11 @@
 #ifndef LIBCBCT_CUDA_UTILS_H
 #define LIBCBCT_CUDA_UTILS_H
 
+#include "Common/Logging.h"
+
+#if defined(LIBCBCT_WITH_CUDA)
 #include <cuda_runtime.h>
+#endif  // LIBCBCT_WITH_CUDA
 
 // -----------------------------------------------------------------------------
 // CUDA and error check
