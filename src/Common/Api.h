@@ -13,7 +13,7 @@
 #if defined(LIBCBCT_API_EXPORT)
 #define LIBCBCT_API __declspec(dllexport)
 #else
-#define LIBCBCT_API
+#define LIBCBCT_API __declspec(dllimport)
 #endif
 #elif defined(__GNUC__) && __GNUC__ >= 4
 #define LIBCBCT_API __attribute__((visibility("default")))
@@ -21,12 +21,33 @@
 #define LIBCBCT_API
 #endif
 
-#else
-#if !defined(__noinline)
-#define __noinline __attribute__((noinline))
+#if defined(_MSC_VER)
+#if !defined(LIBCBCT_NOINLINE)
+#define LIBCBCT_NOINLINE __declspec(noinline)
 #endif
-#if !defined(__forceinline)
-#define __forceinline inline __attribute__((always_inline))
+#if !defined(LIBCBCT_FORCEINLINE)
+#define LIBCBCT_FORCEINLINE __forceinline
+#endif
+#elif defined(__GNUC__) || defined(__clang__)
+#if !defined(LIBCBCT_NOINLINE)
+#define LIBCBCT_NOINLINE __attribute__((noinline))
+#endif
+#if !defined(LIBCBCT_FORCEINLINE)
+#define LIBCBCT_FORCEINLINE inline __attribute__((always_inline))
+#endif
+#else
+#if !defined(LIBCBCT_NOINLINE)
+#define LIBCBCT_NOINLINE
+#endif
+#if !defined(LIBCBCT_FORCEINLINE)
+#define LIBCBCT_FORCEINLINE inline
+#endif
+#endif
+
+#ifdef __CUDACC__
+#define LIBCBCT_HOST_DEVICE __host__ __device__ __forceinline__
+#else
+#define LIBCBCT_HOST_DEVICE LIBCBCT_FORCEINLINE
 #endif
 
 #endif  // LIBCBCT_API_H

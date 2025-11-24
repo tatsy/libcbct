@@ -34,7 +34,8 @@ int main(int argc, char **argv) {
         std::cout << options.help() << std::endl;
         return 0;
     }
-    LIBCBCT_DEBUG("OpenMP threads: %d", omp_get_max_threads());
+    LIBCBCT_INFO("OpenMP threads: %d", omp_get_max_threads());
+    showCudaInfo();
 
     // Read device parameters
     fs::path configPath(configs["config"].as<std::string>());
@@ -78,7 +79,7 @@ int main(int argc, char **argv) {
     Geometry geometry(vec2i(detWidth, detHeight), vec2f(pixelSizeX, pixelSizeY), vec3i(volSize, volSize, volSize), sod,
                       sdd);
 
-// // Reconstruction
+    // Reconstruction
 #if defined(LIBCBCT_WITH_CUDA)
     FeldkampCUDA fdk(RampFilter::SheppLogan);
     VolumeF32 tomogram = fdk.reconstruct(sinogram, geometry);
@@ -92,13 +93,15 @@ int main(int argc, char **argv) {
     std::tie(minVal, maxVal) = tomogram.getMinMax();
     LIBCBCT_DEBUG("min=%f, max=%f", minVal, maxVal);
 
-    tomogram.forEach([minVal, maxVal](float x) { return (x - minVal) / (maxVal - minVal); });
+    tomogram.forEach([minVal, maxVal](float x) { return std::max(0.0f, x) / maxVal; });
 
     // Export tomogram
-    const fs::path outputPath = configPath.parent_path() / "output" / "volume.raw";
+    const fs::path outputPath =
+        configPath.parent_path() / "output" / std::format("volume-{0:d}x{0:d}x{0:d}-uint16.raw", volSize);
     fs::create_directories(outputPath.parent_path());
+
     RawVolumeExporter exporter;
-    exporter.write(outputPath.string(), tomogram);
+    exporter.write(outputPath.string(), tomogram, VolumeType::Uint16);
     LIBCBCT_DEBUG("Reconstructed volume saved: %s", outputPath.string().c_str());
 
     // Preview

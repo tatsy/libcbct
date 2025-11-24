@@ -5,8 +5,10 @@
 #ifndef LIBCBCT_CUDA_UTILS_H
 #define LIBCBCT_CUDA_UTILS_H
 
+#include <cuda_runtime.h>
+
 // -----------------------------------------------------------------------------
-// CUDA and OptiX error check
+// CUDA and error check
 // -----------------------------------------------------------------------------
 
 #define CUDA_CHECK(call)                                                                             \
@@ -35,5 +37,24 @@
             exit(2);                                                                                     \
         }                                                                                                \
     }
+
+inline void showCudaInfo() {
+#if defined(LIBCBCT_WITH_CUDA)
+    int deviceCount = 0;
+    cudaGetDeviceCount(&deviceCount);
+    if (deviceCount == 0) {
+        LIBCBCT_INFO("No CUDA devices found.");
+        return;
+    }
+
+    cudaDeviceProp prop;
+    for (int i = 0; i < deviceCount; ++i) {
+        cudaGetDeviceProperties(&prop, i);
+        LIBCBCT_INFO("CUDA device #%d: %s", i + 1, prop.name);
+    }
+#else
+    LIBCBCT_WARN("LibCBCT is not compiled with CUDA enabled!!");
+#endif
+}
 
 #endif  // LIBCBCT_CUDA_UTILS_H

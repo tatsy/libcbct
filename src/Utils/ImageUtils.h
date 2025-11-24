@@ -5,22 +5,15 @@
 #ifndef LIBCBCT_IMAGE_UTILS_H
 #define LIBCBCT_IMAGE_UTILS_H
 
-#include <math.h>
+#include <cmath>
 
 #include "Common/Api.h"
-#include "CudaUtils.h"
 
-#ifdef __CUDACC__
-#define __HOST_DEVICE__ __host__ __device__ __forceinline__
-#else
-#define __HOST_DEVICE__ __forceinline
-#endif
-
-__HOST_DEVICE__ int clampi(int v, int lo, int hi) {
+LIBCBCT_HOST_DEVICE int clampi(int v, int lo, int hi) {
     return v < lo ? lo : (v > hi ? hi : v);
 }
 
-__HOST_DEVICE__ float bilerp(float *const image, int width, int height, float x, float y) {
+LIBCBCT_HOST_DEVICE float bilerp(float *const image, int width, int height, float x, float y) {
     const float xf = floorf(x);
     const float yf = floorf(y);
     const int x0 = clampi((int)xf, 0, width - 2);

@@ -105,6 +105,7 @@ if (LIBCBCT_WITH_CUDA)
   check_language(CUDA)
   if (CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
     add_definitions("-DLIBCBCT_WITH_CUDA")
 
     set(CMAKE_CUDA_STANDARD 11)

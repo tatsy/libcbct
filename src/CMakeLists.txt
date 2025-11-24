@@ -13,6 +13,12 @@ target_include_directories(
   ${OpenCV_INCLUDE_DIRS}
 )
 
+set_target_properties(
+  ${LIBCBCT} PROPERTIES
+  CUDA_SEPARABLE_COMPILATION ON
+  CUDA_ARCHITECTURES "native"
+)
+
 target_link_libraries(
   ${LIBCBCT} PUBLIC
   opencv_core
@@ -31,8 +37,8 @@ endif()
 if (LIBCBCT_WITH_CUDA)
   target_link_libraries(
     ${LIBCBCT} PUBLIC
-    ${CUDA_LIBRARIES}
-    ${CUDA_cufft_LIBRARY}
+    CUDA::cudart
+    CUDA::cufft
   )
 endif()
 
@@ -83,5 +89,5 @@ target_link_libraries(
 set_property(TARGET ${LIBCBCT_EXE} PROPERTY DEBUG_POSTFIX "-debug")
 
 if (MSVC)
-  set_property(TARGET ${LIBCBCT_EXE} APPEND PROPERTY LINK_FLAGS "/DEBUG /PROFILE")
+  set_property(TARGET ${LIBCBCT_EXE} APPEND PROPERTY LINK_FLAGS "/DEBUG /PROFILE /INCREMENTAL:NO")
 endif()

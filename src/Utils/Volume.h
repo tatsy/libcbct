@@ -16,6 +16,14 @@
 #include "Common/OpenMP.h"
 #include "Utils/ImageUtils.h"
 
+enum class VolumeType {
+    Uint8,
+    Uint16,
+    Uint32,
+    Float32,
+    Float64,
+};
+
 template <typename T>
 class Volume {
 public:
@@ -154,8 +162,17 @@ public:
     }
 
     T getMax() const {
-        const float init = std::is_signed_v<T> ? -std::numeric_limits<T>::infinity() : 0;
-        return reduce([](T a, T b) -> T { return std::max(a, b); }, init);
+        const T init = [] {
+            if constexpr (std::is_floating_point_v<T>) {
+                return -std::numeric_limits<T>::infinity();
+            } else if constexpr (std::is_signed_v<T>) {
+                return std::numeric_limits<T>::lowest();
+            } else {
+                return T{ 0 };
+            }
+        }();
+
+        return reduce([](const T &a, const T &b) -> T { return std::max(a, b); }, init);
     }
 
     std::tuple<T, T> getMinMax() const {
@@ -207,6 +224,8 @@ public:
         }
     }
 
+    VolumeType type() const;
+
 private:
     union {
         struct {
@@ -224,5 +243,30 @@ using VolumeU16 = Volume<uint16_t>;
 using VolumeU32 = Volume<uint32_t>;
 using VolumeF32 = Volume<float>;
 using VolumeF64 = Volume<double>;
+
+template <>
+inline VolumeType Volume<uint8_t>::type() const {
+    return VolumeType::Uint8;
+}
+
+template <>
+inline VolumeType Volume<uint16_t>::type() const {
+    return VolumeType::Uint16;
+}
+
+template <>
+inline VolumeType Volume<uint32_t>::type() const {
+    return VolumeType::Uint32;
+}
+
+template <>
+inline VolumeType Volume<float>::type() const {
+    return VolumeType::Float32;
+}
+
+template <>
+inline VolumeType Volume<double>::type() const {
+    return VolumeType::Float64;
+}
 
 #endif  // LIBCBCT_VOLUME_H

@@ -4,25 +4,25 @@
 #include <iostream>
 #include <fstream>
 
-void RawVolumeExporter::write(const std::string &filename, const VolumeF32 &tomogram) const {
-    std::ofstream writer(filename.c_str(), std::ios::out | std::ios::binary);
-    if (writer.fail()) {
-        LIBCBCT_ERROR("Failed to open file: %s", filename.c_str());
+void RawVolumeExporter::write(const std::string &filename, const VolumeF32 &tomogram, VolumeType type) const {
+    switch (type) {
+    case VolumeType::Uint8:
+        writeAsType<uint8_t>(filename, tomogram, true, 0.0f, 255.0f);
+        break;
+    case VolumeType::Uint16:
+        writeAsType<uint16_t>(filename, tomogram, true, 0.0f, 50000.0f);
+        break;
+    case VolumeType::Uint32:
+        writeAsType<uint32_t>(filename, tomogram, true, 0.0f, 50000.0f);
+        break;
+    case VolumeType::Float32:
+        writeAsType<float>(filename, tomogram, false);
+        break;
+    case VolumeType::Float64:
+        writeAsType<double>(filename, tomogram, false);
+        break;
+    default:
+        LIBCBCT_ERROR("Unsupported volume type for RAW export!");
+        break;
     }
-
-    const int sizeX = tomogram.size<0>();
-    const int sizeY = tomogram.size<1>();
-    const int sizeZ = tomogram.size<2>();
-
-    float *buffer = new float[sizeX];
-    for (int z = 0; z < sizeZ; z++) {
-        for (int y = 0; y < sizeY; y++) {
-            for (int x = 0; x < sizeX; x++) {
-                buffer[x] = tomogram(x, y, z);
-            }
-            writer.write((char *)buffer, sizeof(float) * sizeX);
-        }
-    }
-    delete[] buffer;
-    writer.close();
 }
