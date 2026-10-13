@@ -12,7 +12,6 @@ def tofile(input_path: str | Path, out_path: str | Path, width: int, height: int
 
     raw = np.fromfile(input_path, dtype=np.uint16)
     raw = raw.reshape((height, width))
-    raw = np.flip(raw, axis=0)
 
     brt_path = input_path.parent / 'data.brt'
     if brt_path.exists():
@@ -31,12 +30,15 @@ def tofile(input_path: str | Path, out_path: str | Path, width: int, height: int
     if brt is not None and drk is not None:
         raw = (raw - drk) / (brt - drk) * 50000
         raw = np.clip(raw, 0, 50000).astype(np.uint16)
+    else:
+        print('No bright/dark field correction applied.')
 
     if x_shift > 0:
         raw = np.pad(raw, ((0, 0), (x_shift, 0)), mode='edge')[:, :-x_shift]
     elif x_shift < 0:
         raw = np.pad(raw, ((0, 0), (0, -x_shift)), mode='edge')[:, -x_shift:]
 
+    raw = np.flip(raw, axis=0)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     tifffile.imwrite(
         out_path,
