@@ -9,7 +9,7 @@ set(FETCHCONTENT_QUIET ON)
 # Options
 # ===============================================
 option(LIBCBCT_WITH_CUDA "Build with CUDA support" OFF)
-option(LIBCBCT_WITH_SLANG "Build the Slang compiler and compiler API" OFF)
+option(LIBCBCT_WITH_SLANG "Enable the Slang compiler and compiler API" OFF)
 option(LIBCBCT_WITH_OPENMP "Build with OpenMP support" OFF)
 option(LIBCBCT_BUILD_TESTS "Build tests" OFF)
 option(LIBCBCT_BUILD_STATIC_LIBS "Build static libraries rather than shared libraries" OFF)
@@ -87,7 +87,53 @@ set(CMAKE_DEBUG_POSTFIX "-debug")
 # ===============================================
 if (LIBCBCT_WITH_SLANG)
   # Keep dependency settings local to avoid changing LibCBCT's build options.
-  function(libcbct_fetch_slang)
+  function(libcbct_setup_slang)
+    set(slang_ROOT "" CACHE PATH "Root directory of a local Slang installation")
+    set(slang_hints "${slang_ROOT}" "$ENV{slang_ROOT}" "$ENV{SLANG_ROOT}" "$ENV{VULKAN_SDK}")
+
+    # Prefer Slang's installed CMake package when available.
+    find_package(slang QUIET CONFIG HINTS ${slang_hints})
+    if (TARGET slang::slang)
+      message(STATUS "Using local Slang CMake package: ${slang_DIR}")
+      return()
+    endif()
+
+    # Binary distributions such as the Vulkan SDK may not include a CMake package.
+    find_program(SLANGC_EXECUTABLE NAMES slangc HINTS ${slang_hints} PATH_SUFFIXES bin)
+    if (SLANGC_EXECUTABLE)
+      get_filename_component(slang_bin_dir "${SLANGC_EXECUTABLE}" DIRECTORY)
+      get_filename_component(slang_prefix "${slang_bin_dir}" DIRECTORY)
+      list(APPEND slang_hints "${slang_prefix}")
+    endif()
+    find_path(SLANG_INCLUDE_DIR NAMES slang.h HINTS ${slang_hints}
+      PATH_SUFFIXES include include/slang)
+    find_library(SLANG_LIBRARY NAMES slang slang-compiler HINTS ${slang_hints}
+      PATH_SUFFIXES lib lib64)
+    if (WIN32)
+      find_file(SLANG_RUNTIME_LIBRARY NAMES slang.dll slang-compiler.dll
+        HINTS "${slang_bin_dir}" ${slang_hints} PATH_SUFFIXES bin)
+    endif()
+
+    if (SLANGC_EXECUTABLE AND SLANG_INCLUDE_DIR AND SLANG_LIBRARY
+        AND (NOT WIN32 OR SLANG_RUNTIME_LIBRARY))
+      add_library(slang::slang SHARED IMPORTED)
+      set_target_properties(slang::slang PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${SLANG_INCLUDE_DIR}")
+      if (WIN32)
+        set_target_properties(slang::slang PROPERTIES
+          IMPORTED_IMPLIB "${SLANG_LIBRARY}"
+          IMPORTED_LOCATION "${SLANG_RUNTIME_LIBRARY}")
+      else()
+        set_target_properties(slang::slang PROPERTIES
+          IMPORTED_LOCATION "${SLANG_LIBRARY}")
+      endif()
+      set(SLANG_EXECUTABLE "${SLANGC_EXECUTABLE}" CACHE FILEPATH "Path to the slangc executable")
+      message(STATUS "Using local Slang: ${SLANGC_EXECUTABLE}")
+      message(STATUS "  Slang compiler API: ${SLANG_LIBRARY}")
+      return()
+    endif()
+
+    message(STATUS "Local Slang not found. Building Slang from source...")
     # Slang loads helper libraries by their upstream filenames at runtime.
     set(CMAKE_DEBUG_POSTFIX "")
     # Only the compiler API and command-line compiler are needed for kernels.
@@ -125,15 +171,15 @@ if (LIBCBCT_WITH_SLANG)
       GIT_SUBMODULES_RECURSE FALSE
     )
     FetchContent_MakeAvailable(slang)
+    # The compiler loads this helper at runtime rather than linking it directly.
+    add_dependencies(slang slang-glslang)
+    # Use the same API target name as Slang's installed CMake package.
+    if (NOT TARGET slang::slang)
+      add_library(slang::slang ALIAS slang)
+    endif()
   endfunction()
 
-  libcbct_fetch_slang()
-  # The compiler loads this helper at runtime rather than linking it directly.
-  add_dependencies(slang slang-glslang)
-  # Use the same API target name as Slang's installed CMake package.
-  if (NOT TARGET slang::slang)
-    add_library(slang::slang ALIAS slang)
-  endif()
+  libcbct_setup_slang()
 endif()
 
 # ===============================================
