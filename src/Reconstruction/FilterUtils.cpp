@@ -1,4 +1,3 @@
-#define LIBCBCT_API_EXPORT
 #include "FilterUtils.h"
 
 #include <complex>

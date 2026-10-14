@@ -7,6 +7,8 @@
 
 #include <cuda_runtime.h>
 
+#include <utility>
+
 #include "CudaUtils.h"
 
 template <typename T>

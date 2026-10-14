@@ -9,7 +9,9 @@
 // API export macro
 // -----------------------------------------------------------------------------
 
-#if (defined(WIN32) || defined(_WIN32) || defined(WINCE) || defined(__CYGWIN__))
+#if defined(LIBCBCT_STATIC)
+#define LIBCBCT_API
+#elif (defined(WIN32) || defined(_WIN32) || defined(WINCE) || defined(__CYGWIN__))
 #if defined(LIBCBCT_API_EXPORT)
 #define LIBCBCT_API __declspec(dllexport)
 #else

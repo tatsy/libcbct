@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
-project(LibCBCT LANGUAGES C CXX)
+cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
+project(LibCBCT LANGUAGES CXX)
 
 include(CheckLanguage)
 include(FetchContent)
@@ -10,6 +10,7 @@ set(FETCHCONTENT_QUIET ON)
 # ===============================================
 option(LIBCBCT_WITH_CUDA "Build with CUDA support" OFF)
 option(LIBCBCT_WITH_OPENMP "Build with OpenMP support" OFF)
+option(LIBCBCT_BUILD_TESTS "Build tests" OFF)
 option(LIBCBCT_BUILD_STATIC_LIBS "Build static libraries rather than shared libraries" OFF)
 option(LIBCBCT_BUILD_OPENCV_FROM_SOURCE "Build OpenCV from source" OFF)
 
@@ -29,11 +30,45 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (MSVC)
   add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/utf-8>")
   add_compile_options("$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/utf-8>")
-  add_definitions("-D_CRT_SECURE_NO_WARNINGS")
-  add_definitions("-DNOMINMAX")
-else()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-format-security")
 endif()
+
+# ===============================================
+# OpenMP
+# ===============================================
+if (LIBCBCT_WITH_OPENMP)
+  find_package(OpenMP REQUIRED)
+  message(STATUS "OpenMP found: ${OpenMP_CXX_FLAGS}")
+endif()
+
+# ===============================================
+# CUDA
+# ===============================================
+if (LIBCBCT_WITH_CUDA)
+  check_language(CUDA)
+  if (CMAKE_CUDA_COMPILER)
+    if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+      set(CMAKE_CUDA_ARCHITECTURES "native")
+    endif()
+
+    enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
+    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
+    message(STATUS "Build LibCBCT with CUDA!")
+    get_target_property(LIBCBCT_CUFFT_LIBRARY CUDA::cufft IMPORTED_LOCATION)
+
+    message(STATUS "Building with CUDA support")
+    message(STATUS "  CUDA compiler: ${CMAKE_CUDA_COMPILER} (${CMAKE_CUDA_COMPILER_ID})")
+    message(STATUS "  CUDA toolkit version: ${CUDAToolkit_VERSION}")
+    message(STATUS "  CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
+    message(STATUS "  cuFFT: ${LIBCBCT_CUFFT_LIBRARY}")
+  else()
+    message(WARNING "No CUDA compiler found. Building the CPU version only!")
+    set(LIBCBCT_WITH_CUDA OFF)
+  endif()
+endif()
+
 
 # ===============================================
 # Output directories
@@ -82,54 +117,30 @@ else()
     ${opencv_SOURCE_DIR}/modules/core/include
     ${opencv_SOURCE_DIR}/modules/highgui/include
     ${opencv_SOURCE_DIR}/modules/imgproc/include
-    ${opencv_SOURCE_DIR}/modules/imgproc/include
     ${opencv_SOURCE_DIR}/modules/imgcodecs/include
   )
 endif()
 
 # ===============================================
-# OpenMP
+# Tests
 # ===============================================
+if (LIBCBCT_BUILD_TESTS)
 
-if (LIBCBCT_WITH_OPENMP)
-  find_package(OpenMP REQUIRED)
-  if (OPENMP_FOUND)
-    message(STATUS "OpenMP found: ${OpenMP_CXX_FLAGS}")
-  endif()
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest
+    GIT_TAG v1.17.0
+    GIT_SHALLOW TRUE
+  )
+
+  # Use the shared C runtime (/MD) on MSVC to match libcbct
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
+
+  enable_testing()
+  add_subdirectory(tests)
 endif()
-
-# ===============================================
-# CUDA
-# ===============================================
-if (LIBCBCT_WITH_CUDA)
-  check_language(CUDA)
-  if (CMAKE_CUDA_COMPILER)
-    enable_language(CUDA)
-    find_package(CUDAToolkit REQUIRED)
-    add_definitions("-DLIBCBCT_WITH_CUDA")
-
-    set(CMAKE_CUDA_STANDARD 11)
-    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-    message(STATUS "cuFFT: ${CUDA_cufft_LIBRARY}")
-
-    message(STATUS "INSTALLING EXTENSIONS WITH CUDA!")
-    string(REGEX REPLACE ".[0-9][0-9]|\\." "" CUDA_V ${CMAKE_CUDA_COMPILER_VERSION})
-    message(STATUS "CMAKE_CUDA_COMPILER = ${CMAKE_CUDA_COMPILER}")
-    message(STATUS "CMAKE_CUDA_COMPILER_ID = ${CMAKE_CUDA_COMPILER_ID}")
-    message(STATUS "CMAKE_CUDA_COMPILER_VERSION = ${CUDA_V}")
-  else()
-    message(WARNING "NO CUDA INSTALLATION FOUND, TRYING TO INSTALL CPU VERSION ONLY!")
-    set(LIBCBCT_WITH_CUDA OFF)
-  endif()
-endif()
-
-
-
-# ===============================================
-# Submodules
-# ===============================================
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/submodules/cxxopts/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/submodules/jsonhpp/include)
 
 # ===============================================
 # Traverse subdirectories

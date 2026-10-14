@@ -1,11 +1,7 @@
-#define LIBCBCT_API_EXPORT
 #include "FeldkampCPU.h"
 
-#define _USE_MATH_DEFINES
 #include <cmath>
 #include <vector>
-
-#include <opencv2/opencv.hpp>
 
 #include "Common/Constants.h"
 #include "Common/Logging.h"

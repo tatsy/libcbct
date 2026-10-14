@@ -1,4 +1,3 @@
-#define LIBCBCT_API_EXPORT
 #include "JsonSettingImporter.h"
 
 #include <cstdio>
@@ -8,6 +7,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "Common/Exception.h"
 #include "Common/Logging.h"
 
 using json = nlohmann::json;
@@ -15,7 +15,7 @@ using json = nlohmann::json;
 void JsonSettingImporter::read(const std::string &filename) {
     std::ifstream reader(filename, std::ios::in);
     if (reader.fail()) {
-        LIBCBCT_ERROR("failed to open file: %s", filename.c_str());
+        LIBCBCT_THROW<libcbct::IOError>("failed to open file: %s", filename.c_str());
     }
 
     // Parse JSON

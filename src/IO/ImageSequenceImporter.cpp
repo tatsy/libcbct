@@ -1,11 +1,13 @@
-#define LIBCBCT_API_EXPORT
 #include "ImageSequenceImporter.h"
 
 #include <iostream>
 #include <vector>
+#include <atomic>
 #include <filesystem>
+
 #include <opencv2/opencv.hpp>
 
+#include "Common/Exception.h"
 #include "Common/Logging.h"
 #include "Common/OpenMP.h"
 #include "Common/ProgressBar.h"
@@ -16,6 +18,10 @@ VolumeF32 ImageSequenceImporter::read() const {
     // Get image file list
     std::vector<std::string> fileList;
     const fs::path folderPath(folder.c_str());
+    if (!fs::exists(folderPath) || !fs::is_directory(folderPath)) {
+        LIBCBCT_THROW<libcbct::IOError>("Invalid folder path: %s", folder.c_str());
+    }
+
     for (const auto &entry : fs::directory_iterator(folderPath)) {
         if (fs::is_directory(entry.path())) {
             continue;
@@ -28,7 +34,7 @@ VolumeF32 ImageSequenceImporter::read() const {
     }
 
     if (fileList.empty()) {
-        LIBCBCT_ERROR("No image files found in folder: %s", folder.c_str());
+        LIBCBCT_THROW<libcbct::IOError>("No image files found in folder: %s", folder.c_str());
     }
 
     std::sort(fileList.begin(), fileList.end());
@@ -36,7 +42,7 @@ VolumeF32 ImageSequenceImporter::read() const {
     // Get image size
     cv::Mat firstImage = cv::imread(fileList[0], cv::IMREAD_UNCHANGED);
     if (firstImage.empty()) {
-        LIBCBCT_ERROR("failed to open image: %s", fileList[0].c_str());
+        LIBCBCT_THROW<libcbct::IOError>("failed to open image: %s", fileList[0].c_str());
     }
     const int width = firstImage.cols;
     const int height = firstImage.rows;

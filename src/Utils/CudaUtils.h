@@ -21,7 +21,7 @@
         cudaError_t rc_ = (cudaError_t)(call);                                                                   \
         if (rc_ != cudaSuccess) {                                                                                \
             throw libcbct::CudaError((int)rc_, STR_FMT("CUDA error %s (%s: line %d): %s", cudaGetErrorName(rc_), \
-                                                       cudaGetErrorString(rc_), __FILE__, __LINE__));            \
+                                                       __FILE__, __LINE__, cudaGetErrorString(rc_)));            \
         }                                                                                                        \
     } while (false)
 

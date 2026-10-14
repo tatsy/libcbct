@@ -1,9 +1,0 @@
-target_sources(
-  ${LIBCBCT}
-  PRIVATE
-  BaseImporter.h
-  ImageSequenceImporter.cpp
-  ImageSequenceImporter.h
-  BaseExporter.h
-  RawVolumeExporter.cpp
-  RawVolumeExporter.h)

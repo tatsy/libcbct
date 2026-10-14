@@ -8,3 +8,5 @@ build/*
 *.ply
 *.obj
 *.off
+
+Testing

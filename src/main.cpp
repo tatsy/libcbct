@@ -66,7 +66,7 @@ int run(int argc, char **argv) {
     sinogram.forEach([freeRay](float v) -> float { return -std::log((v + 1.0f) / freeRay); });
 
     if (sinogram.size<0>() != detWidth || sinogram.size<1>() != detHeight || sinogram.size<2>() - 1 != numberOfProj) {
-        LIBCBCT_ERROR("Sinogram size mismatch! Expected: (%d, %d, %d), Actual: (%d, %d, %d)", detWidth, detHeight,
+        LIBCBCT_ERROR("Sinogram size mismatch! Expected: (%d, %d, %d), Actual: (%zu, %zu, %zu)", detWidth, detHeight,
                       numberOfProj, sinogram.size<0>(), sinogram.size<1>(), sinogram.size<2>());
     }
 
@@ -113,6 +113,8 @@ int run(int argc, char **argv) {
 
     cv::waitKey(0);
     cv::destroyAllWindows();
+
+    return 0;
 }
 
 int main(int argc, char **argv) {
@@ -120,6 +122,12 @@ int main(int argc, char **argv) {
         return run(argc, argv);
     } catch (const libcbct::Error &e) {
         std::cerr << "[ERROR] " << e.what() << std::endl;
+        return 1;
+    } catch (const std::exception &e) {
+        std::cerr << "[ERROR] " << e.what() << std::endl;
+        return 1;
+    } catch (...) {
+        std::cerr << "[ERROR] Unknown error occurred." << std::endl;
         return 1;
     }
 }

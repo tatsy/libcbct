@@ -1,4 +1,3 @@
-#define LIBCBCT_API_EXPORT
 #include "FeldkampCUDA.h"
 
 #include <vector>
@@ -80,13 +79,13 @@ VolumeF32 FeldkampCUDA::reconstruct(const VolumeF32 &sinogram, const Geometry &g
     const std::vector<float> cosWeights = makeCosineWeights(geometry, detWidth, detHeight);
 
     // Allocate CUDA memories
-    DeviceBuffer<float> devProj(sizeof(float) * nPixels);
-    DeviceBuffer<float> devCosW(sizeof(float) * nPixels);
-    DeviceBuffer<float> devPadded(sizeof(float) * detHeight * nPad);
-    DeviceBuffer<cufftComplex> devSpec(sizeof(cufftComplex) * detHeight * nFreq);
-    DeviceBuffer<float> devH(sizeof(float) * nFreq);
-    DeviceBuffer<float> devFiltered(sizeof(float) * nPixels);
-    DeviceBuffer<float> devVolume(sizeof(float) * nVoxels);
+    DeviceBuffer<float> devProj(nPixels);
+    DeviceBuffer<float> devCosW(nPixels);
+    DeviceBuffer<float> devPadded(detHeight * nPad);
+    DeviceBuffer<cufftComplex> devSpec(detHeight * nFreq);
+    DeviceBuffer<float> devH(nFreq);
+    DeviceBuffer<float> devFiltered(nPixels);
+    DeviceBuffer<float> devVolume(nVoxels);
 
     CUDA_CHECK(cudaMemset(devVolume.ptr(), 0, sizeof(float) * nVoxels));
     CUDA_CHECK(cudaMemcpy(devCosW.ptr(), cosWeights.data(), sizeof(float) * nPixels, cudaMemcpyHostToDevice));
