@@ -38,6 +38,55 @@ This option prepares the compiler dependency for kernel migration. Reconstructio
 continues to use the existing CPU or CUDA implementation selected by
 `LIBCBCT_WITH_CUDA`.
 
+### Slang FDK kernels
+
+`src/Reconstruction/Slang/FeldkampKernels.slang` provides three compute entry points:
+
+| Entry point | Operation | Dispatch groups (block size: 16 × 16 × 1) |
+| --- | --- | --- |
+| `weightAndPadKernel` | Cosine weighting and zero padding | `ceil(nPad / 16) × ceil(detHeight / 16) × 1` |
+| `applyFilterKernel` | Multiply both complex FFT components by the response | `ceil(nFreq / 16) × ceil(detHeight / 16) × 1` |
+| `backProjectionKernel` | Bilinear sampling and accumulation into the volume | `ceil(volSize.x / 16) × ceil(volSize.y / 16) × volSize.z` |
+
+With `LIBCBCT_WITH_SLANG=ON`, the default build generates CUDA source (`.cu`),
+SPIR-V (`.spv`), and target-specific reflection (`.json`) for each entry point
+under `build/kernels/<configuration>/`. To build these artifacts explicitly:
+
+```shell
+cmake --build build --config Release --target cbct_slang_kernels --parallel
+```
+
+On a host with NVRTC available, generate PTX explicitly:
+
+```shell
+cmake --build build --config Release --target cbct_slang_ptx --parallel
+```
+
+Additional `slangc` arguments can be supplied through the semicolon-separated
+`LIBCBCT_SLANG_PTX_OPTIONS` cache variable. For example,
+`-DLIBCBCT_SLANG_PTX_OPTIONS="-Xnvrtc;-arch=sm_75"` selects a CUDA architecture
+through NVRTC.
+
+Each CUDA entry point takes its corresponding Slang parameter structure by value.
+Use its generated CUDA source and reflection to construct the host-side layout;
+the arguments differ from the original CUDA kernel signature. Structured buffers
+carry a device pointer and element count. `spectrum` uses `float2` elements with
+the same real/imaginary storage as `cufftComplex`. Backprojection retains 64-bit
+volume indexing; its SPIR-V requires the Vulkan `shaderInt64` feature.
+
+The kernels retain voxel and detector pixel centers, half-pixel bilinear border
+extrapolation, and the `(SOD / L)^2` distance weight. Detector dimensions must be
+at least two for bilinear sampling. Keep the existing cuFFT pipeline and pass
+the response divided by `nPad`, as in `FeldkampCUDA::reconstruct`. Initialize the
+volume before reconstruction, use `scale = pi / nProj`, and dispatch projection
+angles in order; volume accumulation is not atomic.
+
+Reconstruction currently dispatches the original CUDA kernels. The Slang entry
+points are available for correctness and performance comparison before switching
+dispatch. With `LIBCBCT_BUILD_TESTS=ON`, `cbct_slang_kernel_tests` runs C++ code
+generated from the Slang source and compares it against the existing CPU helpers,
+including partial tiles, complex filtering, detector borders, and accumulation.
+
 ### Run
 
 ```shell
