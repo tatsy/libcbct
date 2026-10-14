@@ -75,11 +75,11 @@ VolumeF32 FeldkampCPU::reconstruct(const VolumeF32 &sinogram, const Geometry &ge
         }
 
         // Backprojection
+        const float theta = (float)libcbct::kTwoPi * i / nProj;
+        const float scale = (float)libcbct::kPi / nProj;
         OMP_PARALLEL_FOR(int z = 0; z < volSize.z; z++) {
             for (int y = 0; y < volSize.y; y++) {
                 for (int x = 0; x < volSize.x; x++) {
-                    const float theta = (float)libcbct::kTwoPi * i / nProj;
-                    const float scale = (float)libcbct::kPi / nProj;
                     const vec3f uvw = vox2pix(vec3i(x, y, z), theta, geometry);
                     if (uvw.x >= 0 && uvw.y >= 0 && uvw.x < detWidth && uvw.y < detHeight) {
                         tomogram(x, y, z) +=

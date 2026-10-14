@@ -65,7 +65,7 @@ __global__ void backProjectionKernel(const float *const filtered, int detWidth, 
     const vec3f uvw = vox2pix(vec3i(x, y, z), theta, geometry);
     if (uvw.x >= 0 && uvw.y >= 0 && uvw.x < detWidth && uvw.y < detHeight) {
         const float val = bilerp(filtered, detWidth, detHeight, uvw.x - 0.5f, uvw.y - 0.5f);
-        volume[(z * volSize.y + y) * volSize.x + x] += val * uvw.z * scale;
+        volume[((size_t)z * volSize.y + y) * volSize.x + x] += val * uvw.z * scale;
     }
 }
 
@@ -88,10 +88,6 @@ VolumeF32 FeldkampCUDA::reconstruct(const VolumeF32 &sinogram, const Geometry &g
         h /= (float)nPad;
     }
     const std::vector<float> cosWeights = makeCosineWeights(geometry, detWidth, detHeight);
-
-    Geometry *devGeom;
-    CUDA_CHECK(cudaMalloc(&devGeom, sizeof(Geometry)));
-    CUDA_CHECK(cudaMemcpy(devGeom, &geometry, sizeof(Geometry), cudaMemcpyHostToDevice));
 
     // Allocate CUDA memories
     float *devProj, *devCosW, *devPadded, *devH, *devFiltered, *devVolume;
