@@ -9,6 +9,7 @@ set(FETCHCONTENT_QUIET ON)
 # Options
 # ===============================================
 option(LIBCBCT_WITH_CUDA "Build with CUDA support" OFF)
+option(LIBCBCT_WITH_SLANG "Build the Slang compiler and compiler API" OFF)
 option(LIBCBCT_WITH_OPENMP "Build with OpenMP support" OFF)
 option(LIBCBCT_BUILD_TESTS "Build tests" OFF)
 option(LIBCBCT_BUILD_STATIC_LIBS "Build static libraries rather than shared libraries" OFF)
@@ -80,6 +81,60 @@ foreach(CONFIG_TYPE Debug Release RelWithDebInfo MinSizeRel)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG} ${CMAKE_BINARY_DIR}/bin)
 endforeach()
 set(CMAKE_DEBUG_POSTFIX "-debug")
+
+# ===============================================
+# Slang
+# ===============================================
+if (LIBCBCT_WITH_SLANG)
+  # Keep dependency settings local to avoid changing LibCBCT's build options.
+  function(libcbct_fetch_slang)
+    # Slang loads helper libraries by their upstream filenames at runtime.
+    set(CMAKE_DEBUG_POSTFIX "")
+    # Only the compiler API and command-line compiler are needed for kernels.
+    foreach(component GFX SLANG_RHI SLANGD SLANGI SLANGRT
+                      TESTS EXAMPLES REPLAYER CUDA OPTIX NVAPI XLIB AFTERMATH DXIL)
+      set(SLANG_ENABLE_${component} OFF)
+    endforeach()
+    set(SLANG_ENABLE_SLANGC ON)
+    # SPIR-V generation uses this wrapper for optimization and validation.
+    set(SLANG_ENABLE_SLANG_GLSLANG ON)
+    set(SLANG_ENABLE_SPIRV_TOOLS_MIMALLOC OFF)
+    set(SLANG_ENABLE_PREBUILT_BINARIES OFF)
+    set(SLANG_EXCLUDE_DAWN ON)
+    set(SLANG_EXCLUDE_TINT ON)
+    # LLVM is only needed for Slang's CPU compilation targets.
+    set(SLANG_SLANG_LLVM_FLAVOR DISABLE)
+    set(SLANG_LIB_TYPE SHARED)
+
+    FetchContent_Declare(
+      slang
+      GIT_REPOSITORY https://github.com/shader-slang/slang.git
+      GIT_TAG v2025.24.3
+      GIT_SHALLOW TRUE
+      GIT_PROGRESS TRUE
+      GIT_SUBMODULES
+        external/unordered_dense
+        external/miniz
+        external/lz4
+        external/vulkan
+        external/spirv-headers
+        external/spirv-tools
+        external/glslang
+        external/metal-cpp
+        external/lua
+      GIT_SUBMODULES_RECURSE FALSE
+    )
+    FetchContent_MakeAvailable(slang)
+  endfunction()
+
+  libcbct_fetch_slang()
+  # The compiler loads this helper at runtime rather than linking it directly.
+  add_dependencies(slang slang-glslang)
+  # Use the same API target name as Slang's installed CMake package.
+  if (NOT TARGET slang::slang)
+    add_library(slang::slang ALIAS slang)
+  endif()
+endif()
 
 # ===============================================
 # OpenCV

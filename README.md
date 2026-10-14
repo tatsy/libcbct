@@ -16,6 +16,28 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j
 ```
 
+### Slang compiler
+
+Enable Slang with `LIBCBCT_WITH_SLANG` (disabled by default):
+
+```shell
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLIBCBCT_WITH_SLANG=ON
+cmake --build build --config Release --parallel
+```
+
+CMake fetches [Slang v2025.24.3](https://github.com/shader-slang/slang/tree/v2025.24.3)
+and its required submodules, then builds the compiler API (`slang::slang`) and
+command-line compiler (`slangc`). The `slang-glslang` support library and its
+glslang/SPIRV-Tools dependencies are included for SPIR-V optimization and
+validation. Git and network access are required on the first
+configure. Slang's tests, examples, graphics libraries, and LLVM-based CPU targets
+are disabled. Slang can be built without a CUDA toolkit; compiling kernels to PTX
+later requires CUDA's NVRTC library at runtime.
+
+This option prepares the compiler dependency for kernel migration. Reconstruction
+continues to use the existing CPU or CUDA implementation selected by
+`LIBCBCT_WITH_CUDA`.
+
 ### Run
 
 ```shell
