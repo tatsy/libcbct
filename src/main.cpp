@@ -7,6 +7,7 @@
 #include <atomic>
 #include <mutex>
 #include <filesystem>
+#include <memory>
 
 #include <cxxopts.hpp>
 #include <opencv2/opencv.hpp>
@@ -28,14 +29,58 @@ int run(int argc, char **argv) {
     options.add_options()("h,help", "Print help");
     options.add_options()("c,config", "Input configuration file", cxxopts::value<std::string>());
     options.add_options()("s,size", "Reconstruction volume size (cubic)", cxxopts::value<int>()->default_value("512"));
+    options.add_options()("b,backend", "Reconstruction backend: auto, cpu, cuda, slang-ptx",
+                          cxxopts::value<std::string>()->default_value("auto"));
+#if defined(LIBCBCT_WITH_SLANG_CUDA)
+    const std::string defaultPtxDirectory = LIBCBCT_SLANG_KERNEL_DIR;
+#else
+    const std::string defaultPtxDirectory;
+#endif
+    options.add_options()("ptx-dir", "Directory containing FDK PTX and reflection files",
+                          cxxopts::value<std::string>()->default_value(defaultPtxDirectory));
     const auto configs = options.parse(argc, argv);
 
+    if (configs.count("help")) {
+        std::cout << options.help() << std::endl;
+        return 0;
+    }
+
+    std::string backend = configs["backend"].as<std::string>();
+    if (backend == "auto") {
+        backend = "cpu";
+#if defined(LIBCBCT_WITH_CUDA)
+        int deviceCount = 0;
+        if (cudaGetDeviceCount(&deviceCount) == cudaSuccess && deviceCount > 0) backend = "cuda";
+#endif
+    }
+    std::unique_ptr<ReconstructionBase> fdk;
+    if (backend == "cpu") {
+        fdk = std::make_unique<FeldkampCPU>(RampFilter::SheppLogan);
+    } else if (backend == "cuda") {
+#if defined(LIBCBCT_WITH_CUDA)
+        fdk = std::make_unique<FeldkampCUDA>(RampFilter::SheppLogan);
+#else
+        throw libcbct::InvalidArgument("CUDA backend is unavailable; rebuild with LIBCBCT_WITH_CUDA=ON");
+#endif
+    } else if (backend == "slang-ptx") {
+#if defined(LIBCBCT_WITH_SLANG_CUDA)
+        fdk = std::make_unique<FeldkampSlangCUDA>(configs["ptx-dir"].as<std::string>(), RampFilter::SheppLogan);
+#else
+        throw libcbct::InvalidArgument(
+            "Slang PTX backend is unavailable; rebuild with LIBCBCT_WITH_CUDA=ON and LIBCBCT_WITH_SLANG=ON");
+#endif
+    } else {
+        throw libcbct::InvalidArgument("Unknown backend '" + backend + "'; choose auto, cpu, cuda, or slang-ptx");
+    }
+    const int volSize = configs["size"].as<int>();
+    if (volSize <= 0) throw libcbct::InvalidArgument("Reconstruction size must be positive");
     if (configs["config"].count() == 0) {
         std::cout << options.help() << std::endl;
         return 0;
     }
+    LIBCBCT_INFO("Reconstruction backend: %s", backend.c_str());
     LIBCBCT_INFO("OpenMP threads: %d", omp_get_max_threads());
-    showCudaInfo();
+    if (backend != "cpu") showCudaInfo();
 
     // Read device parameters
     fs::path configPath(configs["config"].as<std::string>());
@@ -74,7 +119,6 @@ int run(int argc, char **argv) {
     LIBCBCT_DEBUG("Sinogram: %dx%dx%d", detWidth, detHeight, numberOfProj);
 
     // Setup projection geometry
-    const int volSize = configs["size"].as<int>();
     const float voxelSize = pixelSizeY * (sod / sdd) * ((float)detHeight / (float)volSize);
     LIBCBCT_DEBUG("Reconstruction volume size: %d (%f mm/voxel)", volSize, voxelSize);
 
@@ -82,13 +126,7 @@ int run(int argc, char **argv) {
                       sdd);
 
     // Reconstruction
-#if defined(LIBCBCT_WITH_CUDA)
-    FeldkampCUDA fdk(RampFilter::SheppLogan);
-    VolumeF32 tomogram = fdk.reconstruct(sinogram, geometry);
-#else
-    FeldkampCPU fdk(RampFilter::SheppLogan);
-    VolumeF32 tomogram = fdk.reconstruct(sinogram, geometry);
-#endif  // LIBCBCT_WITH_CUDA
+    VolumeF32 tomogram = fdk->reconstruct(sinogram, geometry);
 
     // Normalize CT values
     float minVal, maxVal;
