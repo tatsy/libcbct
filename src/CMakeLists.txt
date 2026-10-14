@@ -1,11 +1,16 @@
 # ===============================================
 # add libcbct library
 # ===============================================
+
+# Disable assertions in Release builds
+
 if (LIBCBCT_BUILD_STATIC_LIBS)
-  add_library(${LIBCBCT} STATIC)
+add_library(${LIBCBCT} STATIC)
 else()
-  add_library(${LIBCBCT} SHARED)
+add_library(${LIBCBCT} SHARED)
 endif()
+
+target_compile_definitions(${LIBCBCT} PUBLIC $<$<CONFIG:Release>:LIBCBCT_DISABLE_ASSERT>)
 
 target_include_directories(
   ${LIBCBCT} PUBLIC

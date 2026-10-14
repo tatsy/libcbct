@@ -45,12 +45,15 @@ VolumeF32 ImageSequenceImporter::read() const {
     // Load images into sinogram volume
     VolumeF32 sinogram(width, height, nImages);
 
+    std::atomic<int> failedIndex{ -1 };
     ProgressBar pbar(nImages);
     pbar.setDescription("IMPORT: ");
     OMP_PARALLEL_FOR(int i = 0; i < nImages; i++) {
         cv::Mat image = cv::imread(fileList[i], cv::IMREAD_UNCHANGED);
         if (image.empty()) {
-            LIBCBCT_ERROR("failed to open image: %s", fileList[i].c_str());
+            int expected = -1;
+            failedIndex.compare_exchange_strong(expected, i);
+            continue;
         }
 
         for (int y = 0; y < height; y++) {
@@ -60,6 +63,10 @@ VolumeF32 ImageSequenceImporter::read() const {
             }
         }
         pbar.step();
+    }
+
+    if (failedIndex >= 0) {
+        LIBCBCT_THROW<libcbct::IOError>("failed to open image: %s", fileList[failedIndex].c_str());
     }
 
     return sinogram;

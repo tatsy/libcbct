@@ -9,6 +9,8 @@
 #include <memory>
 #include <stdexcept>
 
+#include "Exception.h"
+
 // -----------------------------------------------------------------------------
 // ANSI color
 // -----------------------------------------------------------------------------
@@ -49,10 +51,14 @@ void LIBCBCT_WARN(const char *format, Args... args) {
     std::cout << FG_YEL << "[WARNING] " << FG_NC << STR_FMT(format, args...) << std::endl;
 }
 
+template <typename E = libcbct::Error, typename... Args>
+[[noreturn]] void LIBCBCT_THROW(const char *format, Args... args) {
+    throw E(STR_FMT(format, args...));
+}
+
 template <typename... Args>
 void LIBCBCT_ERROR(const char *format, Args... args) {
-    std::cerr << FG_RED << "[ERROR] " << FG_NC << STR_FMT(format, args...) << std::endl;
-    std::abort();
+    LIBCBCT_THROW<libcbct::Error>(format, args...);
 }
 
 // -----------------------------------------------------------------------------

@@ -1,26 +1,16 @@
 #define LIBCBCT_API_EXPORT
 #include "FeldkampCUDA.h"
 
-#include <cuda_runtime.h>
-#include <cufft.h>
-
 #include <vector>
 
 #include "Common/Constants.h"
 #include "Utils/CudaUtils.h"
 #include "Utils/ImageUtils.h"
+#include "Utils/DeviceBuffer.h"
 #include "Common/ProgressBar.h"
 #include "Reconstruction/FilterUtils.h"
 
 #define BLOCK_SIZE 16
-
-#define CUFFT_CHECK(call)                                                          \
-    do {                                                                           \
-        const cufftResult rc = (call);                                             \
-        if (rc != CUFFT_SUCCESS) {                                                 \
-            LIBCBCT_ERROR("cuFFT error %d at %s:%d", (int)rc, __FILE__, __LINE__); \
-        }                                                                          \
-    } while (false)
 
 __global__ void weightAndPadKernel(const float *__restrict__ proj, const float *__restrict__ weights,
                                    float *__restrict__ padded, int detWidth, int detHeight, int nPad) {
@@ -90,20 +80,17 @@ VolumeF32 FeldkampCUDA::reconstruct(const VolumeF32 &sinogram, const Geometry &g
     const std::vector<float> cosWeights = makeCosineWeights(geometry, detWidth, detHeight);
 
     // Allocate CUDA memories
-    float *devProj, *devCosW, *devPadded, *devH, *devFiltered, *devVolume;
-    cufftComplex *devSpec;
+    DeviceBuffer<float> devProj(sizeof(float) * nPixels);
+    DeviceBuffer<float> devCosW(sizeof(float) * nPixels);
+    DeviceBuffer<float> devPadded(sizeof(float) * detHeight * nPad);
+    DeviceBuffer<cufftComplex> devSpec(sizeof(cufftComplex) * detHeight * nFreq);
+    DeviceBuffer<float> devH(sizeof(float) * nFreq);
+    DeviceBuffer<float> devFiltered(sizeof(float) * nPixels);
+    DeviceBuffer<float> devVolume(sizeof(float) * nVoxels);
 
-    CUDA_CHECK(cudaMalloc(&devProj, sizeof(float) * nPixels));
-    CUDA_CHECK(cudaMalloc(&devCosW, sizeof(float) * nPixels));
-    CUDA_CHECK(cudaMalloc(&devPadded, sizeof(float) * detHeight * nPad));
-    CUDA_CHECK(cudaMalloc(&devSpec, sizeof(cufftComplex) * detHeight * nFreq));
-    CUDA_CHECK(cudaMalloc(&devH, sizeof(float) * nFreq));
-    CUDA_CHECK(cudaMalloc(&devFiltered, sizeof(float) * nPixels));
-    CUDA_CHECK(cudaMalloc(&devVolume, sizeof(float) * nVoxels));
-
-    CUDA_CHECK(cudaMemset(devVolume, 0, sizeof(float) * nVoxels));
-    CUDA_CHECK(cudaMemcpy(devCosW, cosWeights.data(), sizeof(float) * nPixels, cudaMemcpyHostToDevice));
-    CUDA_CHECK(cudaMemcpy(devH, H.data(), sizeof(float) * nFreq, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemset(devVolume.ptr(), 0, sizeof(float) * nVoxels));
+    CUDA_CHECK(cudaMemcpy(devCosW.ptr(), cosWeights.data(), sizeof(float) * nPixels, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(devH.ptr(), H.data(), sizeof(float) * nFreq, cudaMemcpyHostToDevice));
 
     // Reconstruction
     cufftHandle planForward, planInverse;
@@ -119,42 +106,37 @@ VolumeF32 FeldkampCUDA::reconstruct(const VolumeF32 &sinogram, const Geometry &g
     ProgressBar pbar(nProj);
     pbar.setDescription("RECON: ");
     for (int i = 0; i < nProj; i++) {
-        CUDA_CHECK(cudaMemcpy(devProj, sinogram.ptr() + nPixels * i, sizeof(float) * nPixels, cudaMemcpyHostToDevice));
+        CUDA_CHECK(
+            cudaMemcpy(devProj.ptr(), sinogram.ptr() + nPixels * i, sizeof(float) * nPixels, cudaMemcpyHostToDevice));
 
         // Cosine weighting and zero padding
-        weightAndPadKernel<<<gridPad, block>>>(devProj, devCosW, devPadded, detWidth, detHeight, nPad);
+        weightAndPadKernel<<<gridPad, block>>>(devProj.ptr(), devCosW.ptr(), devPadded.ptr(), detWidth, detHeight,
+                                               nPad);
 
         // Ramp filtering
-        CUFFT_CHECK(cufftExecR2C(planForward, devPadded, devSpec));
-        applyFilterKernel<<<gridFreq, block>>>(devSpec, devH, nFreq, detHeight);
-        CUFFT_CHECK(cufftExecC2R(planInverse, devSpec, devPadded));
+        CUFFT_CHECK(cufftExecR2C(planForward, devPadded.ptr(), devSpec.ptr()));
+        applyFilterKernel<<<gridFreq, block>>>(devSpec.ptr(), devH.ptr(), nFreq, detHeight);
+        CUFFT_CHECK(cufftExecC2R(planInverse, devSpec.ptr(), devPadded.ptr()));
 
         // Crop the valid detWidth columns
-        CUDA_CHECK(cudaMemcpy2D(devFiltered, sizeof(float) * detWidth, devPadded, sizeof(float) * nPad,
+        CUDA_CHECK(cudaMemcpy2D(devFiltered.ptr(), sizeof(float) * detWidth, devPadded.ptr(), sizeof(float) * nPad,
                                 sizeof(float) * detWidth, detHeight, cudaMemcpyDeviceToDevice));
 
         // Backprojection
         const float theta = (float)libcbct::kTwoPi * i / nProj;
-        backProjectionKernel<<<gridVol, block>>>(devFiltered, detWidth, detHeight, geometry, theta, scale, devVolume);
+        backProjectionKernel<<<gridVol, block>>>(devFiltered.ptr(), detWidth, detHeight, geometry, theta, scale,
+                                                 devVolume.ptr());
 
         CUDA_SYNC_CHECK();
 
         pbar.step();
     }
 
-    CUDA_CHECK(cudaMemcpy(tomogram.ptr(), devVolume, sizeof(float) * nVoxels, cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(tomogram.ptr(), devVolume.ptr(), sizeof(float) * nVoxels, cudaMemcpyDeviceToHost));
 
     // Free CUDA memories
     CUFFT_CHECK(cufftDestroy(planForward));
     CUFFT_CHECK(cufftDestroy(planInverse));
-
-    CUDA_CHECK(cudaFree(devProj));
-    CUDA_CHECK(cudaFree(devCosW));
-    CUDA_CHECK(cudaFree(devPadded));
-    CUDA_CHECK(cudaFree(devSpec));
-    CUDA_CHECK(cudaFree(devH));
-    CUDA_CHECK(cudaFree(devFiltered));
-    CUDA_CHECK(cudaFree(devVolume));
 
     return tomogram;
 }

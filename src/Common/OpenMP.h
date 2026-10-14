@@ -16,7 +16,7 @@
     } while (1);
 #else
 #define OMP_PRAGMA _Pragma("omp parallel for")
-#define OMP_CRITICAL _Pragma("omp parallel for")
+#define OMP_CRITICAL _Pragma("omp critical")
 #define OMP_ATOMIC(expression)            \
     do {                                  \
         _Pragma("omp atomic") expression; \

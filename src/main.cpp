@@ -22,7 +22,7 @@ static void onTrackbar(int pos, void *userdata) {
     cv::imshow("volume", slice);
 }
 
-int main(int argc, char **argv) {
+int run(int argc, char **argv) {
     // Parse command line options
     cxxopts::Options options("cbct_ext");
     options.add_options()("h,help", "Print help");
@@ -59,15 +59,17 @@ int main(int argc, char **argv) {
     // Import sinogram
     const fs::path imagePath = configPath.parent_path() / "projections";
     if (!fs::exists(imagePath)) {
-        LIBCBCT_ERROR("Projection folder does not exist: %s", imagePath.string().c_str());
+        LIBCBCT_THROW<libcbct::IOError>("Projection folder does not exist: %s", imagePath.string().c_str());
     }
 
     VolumeF32 sinogram = ImageSequenceImporter(imagePath.string(), ".tif", clockwise).read();
     sinogram.forEach([freeRay](float v) -> float { return -std::log((v + 1.0f) / freeRay); });
 
-    LIBCBCT_ASSERT(
-        sinogram.size<0>() == detWidth && sinogram.size<1>() == detHeight && sinogram.size<2>() - 1 == numberOfProj,
-        "Sinogram size mismatch!");
+    if (sinogram.size<0>() != detWidth || sinogram.size<1>() != detHeight || sinogram.size<2>() - 1 != numberOfProj) {
+        LIBCBCT_ERROR("Sinogram size mismatch! Expected: (%d, %d, %d), Actual: (%d, %d, %d)", detWidth, detHeight,
+                      numberOfProj, sinogram.size<0>(), sinogram.size<1>(), sinogram.size<2>());
+    }
+
     LIBCBCT_DEBUG("Detector size: (%d, %d)", detWidth, detHeight);
     LIBCBCT_DEBUG("Sinogram: %dx%dx%d", detWidth, detHeight, numberOfProj);
 
@@ -111,4 +113,13 @@ int main(int argc, char **argv) {
 
     cv::waitKey(0);
     cv::destroyAllWindows();
+}
+
+int main(int argc, char **argv) {
+    try {
+        return run(argc, argv);
+    } catch (const libcbct::Error &e) {
+        std::cerr << "[ERROR] " << e.what() << std::endl;
+        return 1;
+    }
 }

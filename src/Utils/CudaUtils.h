@@ -9,38 +9,40 @@
 
 #if defined(LIBCBCT_WITH_CUDA)
 #include <cuda_runtime.h>
+#include <cufft.h>
 #endif  // LIBCBCT_WITH_CUDA
 
 // -----------------------------------------------------------------------------
 // CUDA and error check
 // -----------------------------------------------------------------------------
 
-#define CUDA_CHECK(call)                                                                             \
-    {                                                                                                \
-        cudaError_t rc = (cudaError_t)call;                                                          \
-        if (rc != cudaSuccess) {                                                                     \
-            std::stringstream txt;                                                                   \
-            cudaError_t err = rc; /*cudaGetLastError();*/                                            \
-            txt << "CUDA Error " << cudaGetErrorName(err) << " (" << cudaGetErrorString(err) << ")"; \
-            std::cerr << txt.str() << std::endl;                                                     \
-            exit(2);                                                                                 \
-        }                                                                                            \
-    }
+#define CUDA_CHECK(call)                                                                                         \
+    do {                                                                                                         \
+        cudaError_t rc_ = (cudaError_t)(call);                                                                   \
+        if (rc_ != cudaSuccess) {                                                                                \
+            throw libcbct::CudaError((int)rc_, STR_FMT("CUDA error %s (%s: line %d): %s", cudaGetErrorName(rc_), \
+                                                       cudaGetErrorString(rc_), __FILE__, __LINE__));            \
+        }                                                                                                        \
+    } while (false)
 
 #define CUDA_CHECK_NOEXCEPT(call) \
-    {                             \
+    do {                          \
         cuda##call;               \
-    }
+    } while (false)
 
-#define CUDA_SYNC_CHECK()                                                                                \
-    {                                                                                                    \
-        cudaDeviceSynchronize();                                                                         \
-        cudaError_t error = cudaGetLastError();                                                          \
-        if (error != cudaSuccess) {                                                                      \
-            fprintf(stderr, "error (%s: line %d): %s\n", __FILE__, __LINE__, cudaGetErrorString(error)); \
-            exit(2);                                                                                     \
-        }                                                                                                \
-    }
+#define CUFFT_CHECK(call)                                                                                         \
+    do {                                                                                                          \
+        const cufftResult rc_ = (call);                                                                           \
+        if (rc_ != CUFFT_SUCCESS) {                                                                               \
+            throw libcbct::CudaError((int)rc_, STR_FMT("cuFFT error %d at %s:%d", (int)rc_, __FILE__, __LINE__)); \
+        }                                                                                                         \
+    } while (false)
+
+#define CUDA_SYNC_CHECK()                    \
+    do {                                     \
+        CUDA_CHECK(cudaGetLastError());      \
+        CUDA_CHECK(cudaDeviceSynchronize()); \
+    } while (false)
 
 inline void showCudaInfo() {
 #if defined(LIBCBCT_WITH_CUDA)
