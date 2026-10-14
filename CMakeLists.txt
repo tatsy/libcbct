@@ -9,6 +9,7 @@ set(FETCHCONTENT_QUIET ON)
 # Options
 # ===============================================
 option(LIBCBCT_WITH_CUDA "Build with CUDA support" OFF)
+option(LIBCBCT_WITH_VULKAN "Enable Vulkan-Hpp and Vulkan Memory Allocator support" OFF)
 option(LIBCBCT_WITH_SLANG "Enable the Slang compiler and compiler API" OFF)
 option(LIBCBCT_WITH_OPENMP "Build with OpenMP support" OFF)
 option(LIBCBCT_BUILD_TESTS "Build tests" OFF)
@@ -81,6 +82,13 @@ foreach(CONFIG_TYPE Debug Release RelWithDebInfo MinSizeRel)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${CONFIG} ${CMAKE_BINARY_DIR}/bin)
 endforeach()
 set(CMAKE_DEBUG_POSTFIX "-debug")
+
+# ===============================================
+# Vulkan
+# ===============================================
+if (LIBCBCT_WITH_VULKAN)
+  include(cmake/VulkanDependencies.cmake)
+endif()
 
 # ===============================================
 # Slang

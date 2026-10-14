@@ -23,6 +23,12 @@ endif()
 # PRE_TEST: list tests when ctest runs, not at build time (the DLLs may not be on PATH while building)
 gtest_discover_tests(cbct_tests DISCOVERY_MODE PRE_TEST)
 
+if (LIBCBCT_WITH_VULKAN)
+  add_executable(cbct_vulkan_tests test_vulkan.cpp)
+  target_link_libraries(cbct_vulkan_tests PRIVATE cbct_vma GTest::gtest_main)
+  gtest_discover_tests(cbct_vulkan_tests DISCOVERY_MODE PRE_TEST)
+endif()
+
 if (LIBCBCT_WITH_SLANG)
   add_executable(cbct_slang_kernel_tests test_slang_kernels.cpp test_slang_layout.cpp)
   add_dependencies(cbct_slang_kernel_tests cbct_slang_cpu_kernels cbct_slang_kernels)

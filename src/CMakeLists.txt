@@ -44,6 +44,16 @@ if (LIBCBCT_WITH_CUDA AND LIBCBCT_WITH_SLANG)
   list(APPEND LIBCBCT_SOURCES Reconstruction/FeldkampSlangCUDA.cpp)
 endif()
 
+if (LIBCBCT_WITH_VULKAN)
+  # Compile VMA in one translation unit, reusable by the library and Vulkan tests.
+  add_library(cbct_vma STATIC Utils/VulkanMemoryAllocator.cpp)
+  target_link_libraries(cbct_vma PUBLIC Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
+  # The future device context supplies its loader's proc-address functions to VMA.
+  target_compile_definitions(cbct_vma PUBLIC
+    VMA_STATIC_VULKAN_FUNCTIONS=0 VMA_DYNAMIC_VULKAN_FUNCTIONS=1)
+  source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES Utils/VulkanMemoryAllocator.cpp)
+endif()
+
 if (LIBCBCT_BUILD_STATIC_LIBS)
   add_library(${LIBCBCT} STATIC ${LIBCBCT_SOURCES} ${LIBCBCT_HEADERS})
   target_compile_definitions(${LIBCBCT} PUBLIC LIBCBCT_STATIC)
@@ -80,6 +90,11 @@ endif()
 if (LIBCBCT_WITH_CUDA AND LIBCBCT_WITH_SLANG)
   target_compile_definitions(${LIBCBCT} PUBLIC LIBCBCT_WITH_SLANG_CUDA)
   add_dependencies(${LIBCBCT} cbct_slang_ptx)
+endif()
+
+if (LIBCBCT_WITH_VULKAN)
+  target_compile_definitions(${LIBCBCT} PUBLIC LIBCBCT_WITH_VULKAN)
+  target_link_libraries(${LIBCBCT} PRIVATE cbct_vma)
 endif()
 
 # ===============================================

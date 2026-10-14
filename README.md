@@ -16,6 +16,38 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j
 ```
 
+### Vulkan dependencies
+
+Enable the optional Vulkan dependency foundation with `LIBCBCT_WITH_VULKAN`
+(disabled by default):
+
+```shell
+cmake -S . -B build/vulkan -DCMAKE_BUILD_TYPE=Release \
+  -DLIBCBCT_WITH_VULKAN=ON -DLIBCBCT_BUILD_TESTS=ON
+cmake --build build/vulkan --config Release --parallel
+ctest --test-dir build/vulkan -C Release --output-on-failure
+```
+
+Install Vulkan's loader and development headers separately, through the Vulkan SDK
+or your platform's development package. CMake uses `find_package(Vulkan REQUIRED)`
+and checks for `vulkan/vulkan.hpp` in those headers. A loader-only installation is
+insufficient; Vulkan-Hpp must be included in the development environment. Vulkan-Hpp
+is not fetched separately, keeping it aligned with the installed Vulkan headers.
+
+CMake fetches [VMA v3.3.0](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/tree/v3.3.0)
+and compiles its implementation in `cbct_vma`, an internal static library linked
+by `cbct`. Future Vulkan sources can include `<vulkan/vulkan.hpp>` and
+`<vk_mem_alloc.h>`. VMA uses dynamic function lookup: pass `vkGetInstanceProcAddr`
+and `vkGetDeviceProcAddr` from the device context's loader through
+`VmaAllocatorCreateInfo::pVulkanFunctions`. No volk dependency is needed at this stage.
+To use an existing VMA checkout offline, set `FETCHCONTENT_SOURCE_DIR_VMA`.
+
+With tests enabled, `cbct_vulkan_tests` creates a Vulkan-Hpp device and allocates,
+maps, flushes, and releases a buffer through VMA. It skips when no compatible
+Vulkan driver or compute device is available. This option prepares the dependencies;
+Vulkan compute dispatch and reconstruction are not yet implemented. It is independent
+of Slang and CUDA. With this option disabled, no Vulkan SDK or VMA is required.
+
 ### Slang compiler
 
 Enable Slang with `LIBCBCT_WITH_SLANG` (disabled by default):
