@@ -13,7 +13,7 @@ LIBCBCT_HOST_DEVICE int clampi(int v, int lo, int hi) {
     return v < lo ? lo : (v > hi ? hi : v);
 }
 
-LIBCBCT_HOST_DEVICE float bilerp(float *const image, int width, int height, float x, float y) {
+LIBCBCT_HOST_DEVICE float bilerp(const float *const image, int width, int height, float x, float y) {
     const float xf = floorf(x);
     const float yf = floorf(y);
     const int x0 = clampi((int)xf, 0, width - 2);

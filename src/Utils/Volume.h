@@ -78,13 +78,13 @@ public:
     T &operator()(int x, int y, int z) {
         LIBCBCT_ASSERT(x >= 0 && x < sizeX && y >= 0 && y < sizeY && z >= 0 && z < sizeZ,
                        "Volume index out of bounds!");
-        return data[((uint64_t)z * sizeY + (uint64_t)y) * sizeX + (uint64_t)x];
+        return data[((size_t)z * sizeY + (size_t)y) * sizeX + (size_t)x];
     }
 
     T operator()(int x, int y, int z) const {
         LIBCBCT_ASSERT(x >= 0 && x < sizeX && y >= 0 && y < sizeY && z >= 0 && z < sizeZ,
                        "Volume index out of bounds!");
-        return data[((uint64_t)z * sizeY + (uint64_t)y) * sizeX + (uint64_t)x];
+        return data[((size_t)z * sizeY + (size_t)y) * sizeX + (size_t)x];
     }
 
     T operator()(float x, float y, float z) const {
@@ -102,7 +102,7 @@ public:
         const float v = y - iy;
         const float w = z - iz;
 
-        const uint64_t base = (uint64_t)iz * sizeY * sizeX + (uint64_t)iy * sizeX + (uint64_t)ix;
+        const size_t base = (size_t)iz * sizeY * sizeX + (size_t)iy * sizeX + (size_t)ix;
         const float v000 = data[base];
         const float v001 = data[base + 1];
         const float v010 = data[base + sizeX];
@@ -205,11 +205,11 @@ public:
     }
 
     template <int Dim>
-    typename std::enable_if<Dim >= 0 && Dim <= 2, uint64_t>::type size() const {
+    typename std::enable_if<Dim >= 0 && Dim <= 2, size_t>::type size() const {
         return sizes_[Dim];
     }
 
-    void resize(uint64_t sizeX, uint64_t sizeY, uint64_t sizeZ) {
+    void resize(size_t sizeX, size_t sizeY, size_t sizeZ) {
         this->sizeX = sizeX;
         this->sizeY = sizeY;
         this->sizeZ = sizeZ;
@@ -229,11 +229,11 @@ public:
 private:
     union {
         struct {
-            uint64_t sizeX;
-            uint64_t sizeY;
-            uint64_t sizeZ;
+            size_t sizeX;
+            size_t sizeY;
+            size_t sizeZ;
         };
-        uint64_t sizes_[3];
+        size_t sizes_[3];
     };
     std::unique_ptr<T[]> data = nullptr;
 };

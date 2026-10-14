@@ -2,6 +2,8 @@ target_sources(
   ${LIBCBCT}
   PRIVATE
   ReconstructionBase.h
+  FilterUtils.cpp
+  FilterUtils.h
   FeldKampCPU.cpp
   FeldkampCPU.h)
 
