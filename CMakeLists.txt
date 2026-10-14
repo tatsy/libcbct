@@ -179,7 +179,20 @@ if (LIBCBCT_WITH_SLANG)
     endif()
   endfunction()
 
-  libcbct_setup_slang()
+    libcbct_setup_slang()
+
+  if (NOT TARGET slangc)
+    find_program(SLANGC_EXECUTABLE NAMES slangc
+      HINTS "${slang_ROOT}" "$ENV{slang_ROOT}"
+            "$ENV{SLANG_ROOT}" "$ENV{VULKAN_SDK}"
+      PATH_SUFFIXES bin
+      REQUIRED)
+    add_executable(slangc IMPORTED)
+    set_target_properties(slangc PROPERTIES
+      IMPORTED_LOCATION "${SLANGC_EXECUTABLE}")
+  endif()
+
+  include(cmake/SlangKernels.cmake)
 endif()
 
 # ===============================================
