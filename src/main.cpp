@@ -123,7 +123,7 @@ int run(int argc, char **argv) {
     const int detHeight = config.getInt("DetHeight");
     const int numberOfProj = config.getInt("NumberOfProj");
     const bool clockwise = config.getBool("Clockwise", true);
-    const bool hasDuplicateEndpoint = config.getBool("HasDuplicateEndpoint", false);
+    const bool isEndpointDuplicate = config.getBool("EndpointDuplicate", false);
     const float freeRay = 65535.0f;  // Assuming 16-bit images
     cbct::LIBCBCT_DEBUG("SOD: %f mm", sod);
     cbct::LIBCBCT_DEBUG("SDD: %f mm", sdd);
@@ -135,7 +135,7 @@ int run(int argc, char **argv) {
         cbct::LIBCBCT_THROW<libcbct::IOError>("Projection folder does not exist: %s", imagePath.string().c_str());
     }
 
-    const cbct::ProjectionSequenceOptions projectionOptions{ numberOfProj, clockwise, hasDuplicateEndpoint };
+    const cbct::ProjectionSequenceOptions projectionOptions{ numberOfProj, clockwise, isEndpointDuplicate };
     cbct::VolumeF32 sinogram = cbct::ImageSequenceImporter(imagePath.string(), ".tif", projectionOptions).read();
 
     if (sinogram.size<0>() != detWidth || sinogram.size<1>() != detHeight || sinogram.size<2>() != numberOfProj) {

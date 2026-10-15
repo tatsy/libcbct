@@ -47,15 +47,15 @@ VolumeF32 ImageSequenceImporter::read() const {
 
     if (projections) {
         const size_t effectiveCount = static_cast<size_t>(projections->numberOfProjections);
-        const size_t expectedCount = effectiveCount + (projections->hasDuplicateEndpoint ? 1u : 0u);
+        const size_t expectedCount = effectiveCount + (projections->isEndpointDuplicate ? 1u : 0u);
         if (fileList.size() != expectedCount) {
             LIBCBCT_THROW<InvalidArgument>(
-                "Projection count mismatch: NumberOfProj=%d, HasDuplicateEndpoint=%s; expected %zu files, found %zu",
-                projections->numberOfProjections, projections->hasDuplicateEndpoint ? "true" : "false",
-                expectedCount, fileList.size());
+                "Projection count mismatch: NumberOfProj=%d, IsEndpointDuplicate=%s; expected %zu files, found %zu",
+                projections->numberOfProjections, projections->isEndpointDuplicate ? "true" : "false", expectedCount,
+                fileList.size());
         }
         // Discard the terminal angle-zero duplicate before reversing the acquisition direction.
-        if (projections->hasDuplicateEndpoint) fileList.pop_back();
+        if (projections->isEndpointDuplicate) fileList.pop_back();
         // Keep the reference frame: [0, -d, -2d, ...] becomes [0, d, 2d, ...].
         if (projections->clockwise) std::reverse(fileList.begin() + 1, fileList.end());
     }

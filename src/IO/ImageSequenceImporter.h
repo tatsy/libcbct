@@ -15,7 +15,7 @@ namespace libcbct {
 struct ProjectionSequenceOptions {
     int numberOfProjections = 0;  // Effective count, excluding the duplicate endpoint.
     bool clockwise = false;
-    bool hasDuplicateEndpoint = false;  // The final file repeats angle zero.
+    bool isEndpointDuplicate = false;  // The final file repeats angle zero.
 };
 
 class LIBCBCT_API ImageSequenceImporter : public BaseImporter {
@@ -29,7 +29,10 @@ public:
 
     explicit ImageSequenceImporter(const std::string &folder, const std::string &extension,
                                    const ProjectionSequenceOptions &projections)
-        : BaseImporter{}, folder{ folder }, extension{ extension }, projections{ projections } {
+        : BaseImporter{}
+        , folder{ folder }
+        , extension{ extension }
+        , projections{ projections } {
     }
     virtual ~ImageSequenceImporter() = default;
 
