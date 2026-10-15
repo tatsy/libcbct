@@ -50,6 +50,11 @@ VolumeF32 ImageSequenceImporter::read() const {
     const int height = firstImage.rows;
     const int nImages = static_cast<int>(fileList.size());
 
+    if (firstImage.type() != CV_16UC1) {
+        LIBCBCT_THROW<libcbct::IOError>("Unsupported image type: %s. Only 16-bit grayscale images are supported.",
+                                        fileList[0].c_str());
+    }
+
     // Load images into sinogram volume
     VolumeF32 sinogram(width, height, nImages);
 
@@ -57,8 +62,29 @@ VolumeF32 ImageSequenceImporter::read() const {
     ProgressBar pbar(nImages);
     pbar.setDescription("IMPORT: ");
     OMP_PARALLEL_FOR(int i = 0; i < nImages; i++) {
-        cv::Mat image = cv::imread(fileList[i], cv::IMREAD_UNCHANGED);
+        cv::Mat image;
+
+        try {
+            image = cv::imread(fileList[i], cv::IMREAD_UNCHANGED);
+        } catch (const cv::Exception &e) {
+            int expected = -1;
+            failedIndex.compare_exchange_strong(expected, i);
+            continue;
+        }
+
         if (image.empty()) {
+            int expected = -1;
+            failedIndex.compare_exchange_strong(expected, i);
+            continue;
+        }
+
+        if (image.type() != CV_16UC1) {
+            int expected = -1;
+            failedIndex.compare_exchange_strong(expected, i);
+            continue;
+        }
+
+        if (image.cols != width || image.rows != height) {
             int expected = -1;
             failedIndex.compare_exchange_strong(expected, i);
             continue;

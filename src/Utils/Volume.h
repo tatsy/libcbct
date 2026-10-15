@@ -9,9 +9,11 @@
 #include <memory>
 #include <tuple>
 #include <vector>
+#include <utility>
 #include <algorithm>
 #include <functional>
 
+#include "Common/Exception.h"
 #include "Common/Logging.h"
 #include "Common/OpenMP.h"
 #include "Utils/ImageUtils.h"
@@ -55,15 +57,24 @@ public:
     virtual ~Volume() = default;
 
     Volume &operator=(const Volume<T> &other) {
-        sizeX = other.sizeX;
-        sizeY = other.sizeY;
-        sizeZ = other.sizeZ;
-        this->resize(sizeX, sizeY, sizeZ);
-        std::memcpy(data.get(), other.data.get(), sizeof(T) * sizeX * sizeY * sizeZ);
+        if (this == &other) {
+            return *this;
+        }
+
+        auto cpy = Volume<T>(other.sizeX, other.sizeY, other.sizeZ);
+        if (!other.empty()) {
+            std::memcpy(cpy.data.get(), other.data.get(), sizeof(T) * other.sizeX * other.sizeY * other.sizeZ);
+        }
+
+        *this = std::move(cpy);
         return *this;
     }
 
     Volume &operator=(Volume<T> &&other) {
+        if (this == &other) {
+            return *this;
+        }
+
         sizeX = other.sizeX;
         sizeY = other.sizeY;
         sizeZ = other.sizeZ;
@@ -129,6 +140,14 @@ public:
         return data.get();
     }
 
+    size_t numel() const {
+        return (size_t)sizeX * (size_t)sizeY * (size_t)sizeZ;
+    }
+
+    bool empty() const {
+        return numel() == 0;
+    }
+
     void forEach(const typename std::function<T(T)> &func) {
         OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
             for (int y = 0; y < sizeY; y++) {
@@ -141,9 +160,9 @@ public:
 
     T reduce(const typename std::function<T(T, T)> &func, const T &init) const {
         auto buf = std::make_unique<T[]>(sizeZ);
-        std::fill_n(buf.get(), sizeZ, init);
 
         OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
+            buf[z] = init;
             for (int y = 0; y < sizeY; y++) {
                 for (int x = 0; x < sizeX; x++) {
                     buf[z] = func(buf[z], (*this)(x, y, z));
@@ -160,29 +179,31 @@ public:
     }
 
     T getMin() const {
-        return reduce([](T a, T b) -> T { return std::min(a, b); }, std::numeric_limits<T>::infinity());
+        if (this->empty()) {
+            LIBCBCT_THROW<libcbct::InvalidArgument>("Volume is empty, cannot compute minimum value.");
+        }
+        return reduce([](T a, T b) -> T { return std::min(a, b); }, (*this)(0, 0, 0));
     }
 
     T getMax() const {
-        const T init = [] {
-            if constexpr (std::is_floating_point_v<T>) {
-                return -std::numeric_limits<T>::infinity();
-            } else if constexpr (std::is_signed_v<T>) {
-                return std::numeric_limits<T>::lowest();
-            } else {
-                return T{ 0 };
-            }
-        }();
-
-        return reduce([](const T &a, const T &b) -> T { return std::max(a, b); }, init);
+        if (this->empty()) {
+            LIBCBCT_THROW<libcbct::InvalidArgument>("Volume is empty, cannot compute maximum value.");
+        }
+        return reduce([](T a, T b) -> T { return std::max(a, b); }, (*this)(0, 0, 0));
     }
 
     std::tuple<T, T> getMinMax() const {
+        if (this->empty()) {
+            LIBCBCT_THROW<libcbct::InvalidArgument>("Volume is empty, cannot compute minimum and maximum values.");
+        }
+
         std::vector<T> localMins(sizeZ);
         std::vector<T> localMaxs(sizeZ);
+        const T initMin = (*this)(0, 0, 0);
+        const T initMax = (*this)(0, 0, 0);
         OMP_PARALLEL_FOR(int z = 0; z < sizeZ; z++) {
-            T localMin = std::numeric_limits<T>::infinity();
-            T localMax = std::is_signed_v<T> ? -std::numeric_limits<T>::infinity() : 0;
+            T localMin = initMin;
+            T localMax = initMax;
 
             for (int y = 0; y < sizeY; y++) {
                 for (int x = 0; x < sizeX; x++) {
@@ -196,8 +217,8 @@ public:
             localMaxs[z] = localMax;
         }
 
-        T minVal = std::numeric_limits<T>::infinity();
-        T maxVal = std::is_signed_v<T> ? -std::numeric_limits<T>::infinity() : 0;
+        T minVal = initMin;
+        T maxVal = initMax;
         for (int z = 0; z < sizeZ; z++) {
             minVal = std::min(minVal, localMins[z]);
             maxVal = std::max(maxVal, localMaxs[z]);

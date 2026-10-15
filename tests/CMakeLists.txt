@@ -4,6 +4,7 @@ add_executable(cbct_tests
   test_filter.cpp
   test_geometry.cpp
   test_namespace.cpp
+  test_volume.cpp
   test_fdk.cpp
   test_errors.cpp)
 

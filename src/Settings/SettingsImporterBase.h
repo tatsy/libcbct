@@ -9,6 +9,8 @@
 #include <unordered_map>
 
 #include "Common/Api.h"
+#include "Common/Logging.h"
+#include "Common/Exception.h"
 
 namespace libcbct {
 
@@ -33,6 +35,23 @@ public:
             return defaultValue;
         }
         return std::strtod(this->getString(key).c_str(), NULL);
+    }
+
+    bool getBool(const std::string &key, bool defaultValue = false) const {
+        if (!this->hasKey(key)) {
+            return defaultValue;
+        }
+        const auto val = this->getString(key);
+        char *end = nullptr;
+
+        errno = 0;
+        const double v = std::strtod(val.c_str(), &end);
+
+        if (end == val.c_str() || end != val.c_str() + val.size() || errno == ERANGE || (v != 0.0 && v != 1.0)) {
+            LIBCBCT_THROW<libcbct::InvalidArgument>("Invalid boolean value for key: %s", key.c_str());
+        }
+
+        return v == 1.0;
     }
 
     std::string getString(const std::string &key, const std::string &defaultValue = "") const {

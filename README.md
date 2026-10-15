@@ -307,7 +307,6 @@ Select a reconstruction backend with `--backend` (or `-b`):
 | `auto` (default) | CUDA/PTX when built and a device is available; otherwise CPU |
 | `cpu` | CPU reconstruction |
 | `cuda` | Slang PTX kernels and cuFFT; requires a CUDA build and device |
-| `slang-ptx` | Compatibility alias for `cuda`, with identical PTX-directory handling |
 | `vulkan` | Slang SPIR-V kernels and GPU FFT; requires a Vulkan build and device |
 
 Explicitly requesting a backend that was not built produces an error. For example:

@@ -32,7 +32,7 @@ int run(int argc, char **argv) {
     options.add_options()("h,help", "Print help");
     options.add_options()("c,config", "Input configuration file", cxxopts::value<std::string>());
     options.add_options()("s,size", "Reconstruction volume size (cubic)", cxxopts::value<int>()->default_value("512"));
-    options.add_options()("b,backend", "Reconstruction backend: auto, cpu, cuda, vulkan (slang-ptx aliases cuda)",
+    options.add_options()("b,backend", "Reconstruction backend: auto, cpu, cuda, vulkan",
                           cxxopts::value<std::string>()->default_value("auto"));
 #if defined(LIBCBCT_WITH_CUDA)
     const std::string defaultPtxDirectory = LIBCBCT_SLANG_KERNEL_DIR;
@@ -59,14 +59,26 @@ int run(int argc, char **argv) {
     }
 
     std::string backend = configs["backend"].as<std::string>();
-    if (backend == "slang-ptx") backend = "cuda";
+
+    // Auto-select backend if not specified
     if (backend == "auto") {
         backend = "cpu";
+
+        // Check for CUDA availability
 #if defined(LIBCBCT_WITH_CUDA)
         int deviceCount = 0;
         if (cudaGetDeviceCount(&deviceCount) == cudaSuccess && deviceCount > 0) backend = "cuda";
 #endif
+
+        // Check for Vulkan availability
+#if defined(LIBCBCT_WITH_VULKAN)
+        if (backend == "cpu") {
+            backend = "vulkan";
+        }
+#endif
     }
+
+    // Create reconstruction object based on the selected backend
     std::unique_ptr<cbct::ReconstructionBase> fdk;
     if (backend == "cpu") {
         fdk = std::make_unique<cbct::FeldkampCPU>(cbct::RampFilter::SheppLogan);
@@ -79,13 +91,14 @@ int run(int argc, char **argv) {
     } else if (backend == "vulkan") {
 #if defined(LIBCBCT_WITH_VULKAN)
         fdk = std::make_unique<cbct::FeldkampVulkan>(configs["spirv-dir"].as<std::string>(),
-            cbct::RampFilter::SheppLogan, configs["vulkan-device"].as<int>());
+                                                     cbct::RampFilter::SheppLogan, configs["vulkan-device"].as<int>());
 #else
         throw libcbct::InvalidArgument("Vulkan backend is unavailable; rebuild with LIBCBCT_WITH_VULKAN=ON");
 #endif
     } else {
         throw libcbct::InvalidArgument("Unknown backend '" + backend + "'; choose auto, cpu, cuda, or vulkan");
     }
+
     const int volSize = configs["size"].as<int>();
     if (volSize <= 0) throw libcbct::InvalidArgument("Reconstruction size must be positive");
     if (configs["config"].count() == 0) {
@@ -109,7 +122,7 @@ int run(int argc, char **argv) {
     const int detWidth = config.getInt("DetWidth");
     const int detHeight = config.getInt("DetHeight");
     const int numberOfProj = config.getInt("NumberOfProj");
-    const bool clockwise = config.getInt("Clockwise", 1) != 0;
+    const bool clockwise = config.getBool("Clockwise", true);
     const float freeRay = 65535.0f;  // Assuming 16-bit images
     cbct::LIBCBCT_DEBUG("SOD: %f mm", sod);
     cbct::LIBCBCT_DEBUG("SDD: %f mm", sdd);
@@ -125,8 +138,8 @@ int run(int argc, char **argv) {
     sinogram.forEach([freeRay](float v) -> float { return -std::log((v + 1.0f) / freeRay); });
 
     if (sinogram.size<0>() != detWidth || sinogram.size<1>() != detHeight || sinogram.size<2>() - 1 != numberOfProj) {
-        cbct::LIBCBCT_ERROR("Sinogram size mismatch! Expected: (%d, %d, %d), Actual: (%zu, %zu, %zu)", detWidth, detHeight,
-                      numberOfProj, sinogram.size<0>(), sinogram.size<1>(), sinogram.size<2>());
+        cbct::LIBCBCT_ERROR("Sinogram size mismatch! Expected: (%d, %d, %d), Actual: (%zu, %zu, %zu)", detWidth,
+                            detHeight, numberOfProj, sinogram.size<0>(), sinogram.size<1>(), sinogram.size<2>());
     }
 
     cbct::LIBCBCT_DEBUG("Detector size: (%d, %d)", detWidth, detHeight);
@@ -136,8 +149,8 @@ int run(int argc, char **argv) {
     const float voxelSize = pixelSizeY * (sod / sdd) * ((float)detHeight / (float)volSize);
     cbct::LIBCBCT_DEBUG("Reconstruction volume size: %d (%f mm/voxel)", volSize, voxelSize);
 
-    cbct::Geometry geometry(cbct::vec2i(detWidth, detHeight), cbct::vec2f(pixelSizeX, pixelSizeY), cbct::vec3i(volSize, volSize, volSize), sod,
-                      sdd);
+    cbct::Geometry geometry(cbct::vec2i(detWidth, detHeight), cbct::vec2f(pixelSizeX, pixelSizeY),
+                            cbct::vec3i(volSize, volSize, volSize), sod, sdd);
 
     // Reconstruction
     cbct::VolumeF32 tomogram = fdk->reconstruct(sinogram, geometry);
