@@ -48,7 +48,7 @@ public:
         const double v = std::strtod(val.c_str(), &end);
 
         if (end == val.c_str() || end != val.c_str() + val.size() || errno == ERANGE || (v != 0.0 && v != 1.0)) {
-            LIBCBCT_THROW<libcbct::InvalidArgument>("Invalid boolean value for key: %s", key.c_str());
+            LIBCBCT_THROW<libcbct::InvalidArgument>("Invalid boolean value for key: {}", key);
         }
 
         return v == 1.0;

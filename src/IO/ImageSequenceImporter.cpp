@@ -25,7 +25,7 @@ VolumeF32 ImageSequenceImporter::read() const {
     std::vector<std::string> fileList;
     const fs::path folderPath(folder.c_str());
     if (!fs::exists(folderPath) || !fs::is_directory(folderPath)) {
-        LIBCBCT_THROW<libcbct::IOError>("Invalid folder path: %s", folder.c_str());
+        LIBCBCT_THROW<libcbct::IOError>("Invalid folder path: {}", folder);
     }
 
     for (const auto &entry : fs::directory_iterator(folderPath)) {
@@ -40,7 +40,7 @@ VolumeF32 ImageSequenceImporter::read() const {
     }
 
     if (fileList.empty()) {
-        LIBCBCT_THROW<libcbct::IOError>("No image files found in folder: %s", folder.c_str());
+        LIBCBCT_THROW<libcbct::IOError>("No image files found in folder: {}", folder);
     }
 
     std::sort(fileList.begin(), fileList.end());
@@ -50,9 +50,8 @@ VolumeF32 ImageSequenceImporter::read() const {
         const size_t expectedCount = effectiveCount + (projections->isEndpointDuplicate ? 1u : 0u);
         if (fileList.size() != expectedCount) {
             LIBCBCT_THROW<InvalidArgument>(
-                "Projection count mismatch: NumberOfProj=%d, IsEndpointDuplicate=%s; expected %zu files, found %zu",
-                projections->numberOfProjections, projections->isEndpointDuplicate ? "true" : "false", expectedCount,
-                fileList.size());
+                "Projection count mismatch: NumberOfProj={}, IsEndpointDuplicate={}; expected {} files, found {}",
+                projections->numberOfProjections, projections->isEndpointDuplicate, expectedCount, fileList.size());
         }
         // Discard the terminal angle-zero duplicate before reversing the acquisition direction.
         if (projections->isEndpointDuplicate) fileList.pop_back();
@@ -66,15 +65,15 @@ VolumeF32 ImageSequenceImporter::read() const {
     // Get image size
     cv::Mat firstImage = cv::imread(fileList[0], cv::IMREAD_UNCHANGED);
     if (firstImage.empty()) {
-        LIBCBCT_THROW<libcbct::IOError>("failed to open image: %s", fileList[0].c_str());
+        LIBCBCT_THROW<libcbct::IOError>("failed to open image: {}", fileList[0]);
     }
     const int width = firstImage.cols;
     const int height = firstImage.rows;
     const int nImages = static_cast<int>(fileList.size());
 
     if (firstImage.type() != CV_16UC1) {
-        LIBCBCT_THROW<libcbct::IOError>("Unsupported image type: %s. Only 16-bit grayscale images are supported.",
-                                        fileList[0].c_str());
+        LIBCBCT_THROW<libcbct::IOError>("Unsupported image type: {}. Only 16-bit grayscale images are supported.",
+                                        fileList[0]);
     }
 
     // Load images into sinogram volume
@@ -122,7 +121,7 @@ VolumeF32 ImageSequenceImporter::read() const {
     }
 
     if (failedIndex >= 0) {
-        LIBCBCT_THROW<libcbct::IOError>("failed to open image: %s", fileList[failedIndex].c_str());
+        LIBCBCT_THROW<libcbct::IOError>("failed to open image: {}", fileList[failedIndex]);
     }
 
     return sinogram;

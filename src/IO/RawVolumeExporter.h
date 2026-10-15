@@ -29,7 +29,7 @@ private:
         const auto [minVal, maxVal] = normalize ? detail::finiteMinMax(tomogram) : std::pair{ 0.0f, 0.0f };
         std::ofstream writer(filename.c_str(), std::ios::out | std::ios::binary);
         if (writer.fail()) {
-            LIBCBCT_ERROR("Failed to open file: %s", filename.c_str());
+            LIBCBCT_ERROR("Failed to open file: {}", filename);
         }
 
         const int sizeX = tomogram.size<0>();

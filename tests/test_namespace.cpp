@@ -40,7 +40,7 @@ TEST(Namespace, VectorOperatorsAndMathWorkWithoutUsingDirectives) {
 }
 
 TEST(Namespace, LoggingAndCheckMacrosWorkInConsumerScope) {
-    EXPECT_EQ(cbct::STR_FMT("value=%d", 7), "value=7");
+    EXPECT_EQ(cbct::STR_FMT("value={}", 7), "value=7");
     EXPECT_THROW(cbct::LIBCBCT_THROW<cbct::InvalidArgument>("invalid value"), cbct::InvalidArgument);
     LIBCBCT_ASSERT(true, "A consumer can invoke the assertion macro");
 #if defined(LIBCBCT_WITH_CUDA)

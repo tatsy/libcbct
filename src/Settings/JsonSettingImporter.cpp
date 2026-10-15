@@ -17,7 +17,7 @@ using json = nlohmann::json;
 void JsonSettingImporter::read(const std::string &filename) {
     std::ifstream reader(filename, std::ios::in);
     if (reader.fail()) {
-        LIBCBCT_THROW<libcbct::IOError>("failed to open file: %s", filename.c_str());
+        LIBCBCT_THROW<libcbct::IOError>("failed to open file: {}", filename);
     }
 
     // Parse JSON
@@ -32,7 +32,7 @@ void JsonSettingImporter::read(const std::string &filename) {
             const auto val = it.value().get<bool>();
             buf[it.key()] = val ? "1" : "0";
         } else {
-            LIBCBCT_THROW<libcbct::InvalidArgument>("Unsupported value type for key: %s", it.key().c_str());
+            LIBCBCT_THROW<libcbct::InvalidArgument>("Unsupported value type for key: {}", it.key());
         }
     }
 

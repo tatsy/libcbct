@@ -105,15 +105,15 @@ int run(int argc, char **argv) {
         std::cout << options.help() << std::endl;
         return 0;
     }
-    cbct::LIBCBCT_INFO("Reconstruction backend: %s", backend.c_str());
-    cbct::LIBCBCT_INFO("OpenMP threads: %d", omp_get_max_threads());
+    cbct::LIBCBCT_INFO("Reconstruction backend: {}", backend);
+    cbct::LIBCBCT_INFO("OpenMP threads: {}", omp_get_max_threads());
     if (backend == "cuda") cbct::showCudaInfo();
 
     // Read device parameters
     fs::path configPath(configs["config"].as<std::string>());
     cbct::JsonSettingImporter config;
     config.read(configPath.string());
-    cbct::LIBCBCT_DEBUG("Load config file from %s", configPath.string().c_str());
+    cbct::LIBCBCT_DEBUG("Load config file from {}", configPath.string());
 
     const float sod = config.getFloat("SOD");
     const float sdd = config.getFloat("SDD");
@@ -125,31 +125,31 @@ int run(int argc, char **argv) {
     const bool clockwise = config.getBool("Clockwise", true);
     const bool isEndpointDuplicate = config.getBool("EndpointDuplicate", false);
     const float freeRay = 65535.0f;  // Assuming 16-bit images
-    cbct::LIBCBCT_DEBUG("SOD: %f mm", sod);
-    cbct::LIBCBCT_DEBUG("SDD: %f mm", sdd);
-    cbct::LIBCBCT_DEBUG("Pixel size: (%f mm, %f mm)", pixelSizeX, pixelSizeY);
+    cbct::LIBCBCT_DEBUG("SOD: {:f} mm", sod);
+    cbct::LIBCBCT_DEBUG("SDD: {:f} mm", sdd);
+    cbct::LIBCBCT_DEBUG("Pixel size: ({:f} mm, {:f} mm)", pixelSizeX, pixelSizeY);
 
     // Import sinogram
     const fs::path imagePath = configPath.parent_path() / "projections";
     if (!fs::exists(imagePath)) {
-        cbct::LIBCBCT_THROW<libcbct::IOError>("Projection folder does not exist: %s", imagePath.string().c_str());
+        cbct::LIBCBCT_THROW<libcbct::IOError>("Projection folder does not exist: {}", imagePath.string());
     }
 
     const cbct::ProjectionSequenceOptions projectionOptions{ numberOfProj, clockwise, isEndpointDuplicate };
     cbct::VolumeF32 sinogram = cbct::ImageSequenceImporter(imagePath.string(), ".tif", projectionOptions).read();
 
     if (sinogram.size<0>() != detWidth || sinogram.size<1>() != detHeight || sinogram.size<2>() != numberOfProj) {
-        cbct::LIBCBCT_ERROR("Sinogram size mismatch! Expected: (%d, %d, %d), Actual: (%zu, %zu, %zu)", detWidth,
+        cbct::LIBCBCT_ERROR("Sinogram size mismatch! Expected: ({}, {}, {}), Actual: ({}, {}, {})", detWidth,
                             detHeight, numberOfProj, sinogram.size<0>(), sinogram.size<1>(), sinogram.size<2>());
     }
     sinogram.forEach([freeRay](float v) -> float { return -std::log((v + 1.0f) / freeRay); });
 
-    cbct::LIBCBCT_DEBUG("Detector size: (%d, %d)", detWidth, detHeight);
-    cbct::LIBCBCT_DEBUG("Sinogram: %dx%dx%d", detWidth, detHeight, numberOfProj);
+    cbct::LIBCBCT_DEBUG("Detector size: ({}, {})", detWidth, detHeight);
+    cbct::LIBCBCT_DEBUG("Sinogram: {}x{}x{}", detWidth, detHeight, numberOfProj);
 
     // Setup projection geometry
     const float voxelSize = pixelSizeY * (sod / sdd) * ((float)detHeight / (float)volSize);
-    cbct::LIBCBCT_DEBUG("Reconstruction volume size: %d (%f mm/voxel)", volSize, voxelSize);
+    cbct::LIBCBCT_DEBUG("Reconstruction volume size: {} ({:f} mm/voxel)", volSize, voxelSize);
 
     cbct::Geometry geometry(cbct::vec2i(detWidth, detHeight), cbct::vec2f(pixelSizeX, pixelSizeY),
                             cbct::vec3i(volSize, volSize, volSize), sod, sdd);
@@ -160,7 +160,7 @@ int run(int argc, char **argv) {
     // Normalize CT values
     float minVal, maxVal;
     std::tie(minVal, maxVal) = tomogram.getMinMax();
-    cbct::LIBCBCT_DEBUG("min=%f, max=%f", minVal, maxVal);
+    cbct::LIBCBCT_DEBUG("min={:f}, max={:f}", minVal, maxVal);
 
     cbct::normalizePositiveMaximum(tomogram);
 
@@ -171,7 +171,7 @@ int run(int argc, char **argv) {
 
     cbct::RawVolumeExporter exporter;
     exporter.write(outputPath.string(), tomogram, cbct::VolumeType::Uint16);
-    cbct::LIBCBCT_DEBUG("Reconstructed volume saved: %s", outputPath.string().c_str());
+    cbct::LIBCBCT_DEBUG("Reconstructed volume saved: {}", outputPath.string());
 
     // Preview
     if (configs.count("no-preview")) return 0;

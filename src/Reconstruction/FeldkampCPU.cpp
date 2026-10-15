@@ -23,7 +23,7 @@ VolumeF32 FeldkampCPU::reconstruct(const VolumeF32 &sinogram, const Geometry &ge
 
     // Allocate output volume
     const vec3i volSize = geometry.volSize;
-    LIBCBCT_DEBUG("Volume size: %dx%dx%d", volSize.x, volSize.y, volSize.z);
+    LIBCBCT_DEBUG("Volume size: {}x{}x{}", volSize.x, volSize.y, volSize.z);
     VolumeF32 tomogram(volSize.x, volSize.y, volSize.z);
 
     // Precompute cosine weights

@@ -20,7 +20,7 @@
     do {                                                                                                                      \
         cudaError_t rc_ = (cudaError_t)(call);                                                                                \
         if (rc_ != cudaSuccess) {                                                                                             \
-            throw ::libcbct::CudaError((int)rc_, ::libcbct::STR_FMT("CUDA error %s (%s: line %d): %s", cudaGetErrorName(rc_), \
+            throw ::libcbct::CudaError((int)rc_, ::libcbct::STR_FMT("CUDA error {} ({}: line {}): {}", cudaGetErrorName(rc_), \
                                                        __FILE__, __LINE__, cudaGetErrorString(rc_)));                         \
         }                                                                                                                     \
     } while (false)
@@ -34,7 +34,7 @@
     do {                                                                                                                       \
         const cufftResult rc_ = (call);                                                                                        \
         if (rc_ != CUFFT_SUCCESS) {                                                                                            \
-            throw ::libcbct::CudaError((int)rc_, ::libcbct::STR_FMT("cuFFT error %d at %s:%d", (int)rc_, __FILE__, __LINE__)); \
+            throw ::libcbct::CudaError((int)rc_, ::libcbct::STR_FMT("cuFFT error {} at {}:{}", (int)rc_, __FILE__, __LINE__)); \
         }                                                                                                                      \
     } while (false)
 
@@ -58,7 +58,7 @@ inline void showCudaInfo() {
     cudaDeviceProp prop;
     for (int i = 0; i < deviceCount; ++i) {
         cudaGetDeviceProperties(&prop, i);
-        LIBCBCT_INFO("CUDA device #%d: %s", i + 1, prop.name);
+        LIBCBCT_INFO("CUDA device #{}: {}", i + 1, prop.name);
     }
 #else
     LIBCBCT_WARN("LibCBCT is not compiled with CUDA enabled!!");

@@ -58,7 +58,7 @@ VolumeF32 FeldkampVulkan::reconstruct(const VolumeF32 &sinogram, const Geometry 
     if (std::max(spectrumBytes, volumeBytes) > context.deviceInfo().maxStorageBufferBytes) {
         throw InvalidArgument("Vulkan FDK buffers exceed the device's maximum storage-buffer range");
     }
-    LIBCBCT_INFO("Vulkan device #%d: %s", context.deviceInfo().index, context.deviceInfo().name.c_str());
+    LIBCBCT_INFO("Vulkan device #{}: {}", context.deviceInfo().index, context.deviceInfo().name);
     SlangSpirvKernel weight(context, kernelDirectory_, "weightAndPadKernel");
     SlangSpirvKernel filter(context, kernelDirectory_, "applyFilterKernel");
     SlangSpirvKernel crop(context, kernelDirectory_, "cropFilteredKernel");

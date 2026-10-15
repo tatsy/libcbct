@@ -5,9 +5,10 @@
 #ifndef LIBCBCT_LOGGING_H
 #define LIBCBCT_LOGGING_H
 
+#include <format>
 #include <iostream>
-#include <memory>
-#include <stdexcept>
+#include <string>
+#include <utility>
 
 #include "Exception.h"
 
@@ -25,42 +26,39 @@ namespace libcbct {
 // -----------------------------------------------------------------------------
 // Message handlers
 // -----------------------------------------------------------------------------
+// Format strings use std::format syntax ("{}", "{:f}", ...). Taking
+// std::format_string makes the compiler validate the format string against the
+// argument types, so mismatches and non-literal format strings are rejected at
+// compile time.
 
 template <typename... Args>
-std::string STR_FMT(const char *format, Args... args) {
-    int size_s = std::snprintf(nullptr, 0, format, args...) + 1;
-    if (size_s <= 0) {
-        throw std::runtime_error("Error during formatting.");
-    }
-    auto size = static_cast<size_t>(size_s);
-    auto buf = std::make_unique<char[]>(size);
-    std::snprintf(buf.get(), size, format, args...);
-    return std::string(buf.get(), buf.get() + size - 1);
+std::string STR_FMT(std::format_string<Args...> fmt, Args &&...args) {
+    return std::format(fmt, std::forward<Args>(args)...);
 }
 
 template <typename... Args>
-void LIBCBCT_INFO(const char *format, Args... args) {
-    std::cout << FG_BLU << "[INFO] " << FG_NC << STR_FMT(format, args...) << std::endl;
+void LIBCBCT_INFO(std::format_string<Args...> fmt, Args &&...args) {
+    std::cout << FG_BLU << "[INFO] " << FG_NC << std::format(fmt, std::forward<Args>(args)...) << std::endl;
 }
 
 template <typename... Args>
-void LIBCBCT_DEBUG(const char *format, Args... args) {
-    std::cout << FG_GRN << "[DEBUG] " << FG_NC << STR_FMT(format, args...) << std::endl;
+void LIBCBCT_DEBUG(std::format_string<Args...> fmt, Args &&...args) {
+    std::cout << FG_GRN << "[DEBUG] " << FG_NC << std::format(fmt, std::forward<Args>(args)...) << std::endl;
 }
 
 template <typename... Args>
-void LIBCBCT_WARN(const char *format, Args... args) {
-    std::cout << FG_YEL << "[WARNING] " << FG_NC << STR_FMT(format, args...) << std::endl;
+void LIBCBCT_WARN(std::format_string<Args...> fmt, Args &&...args) {
+    std::cout << FG_YEL << "[WARNING] " << FG_NC << std::format(fmt, std::forward<Args>(args)...) << std::endl;
 }
 
 template <typename E = libcbct::Error, typename... Args>
-[[noreturn]] void LIBCBCT_THROW(const char *format, Args... args) {
-    throw E(STR_FMT(format, args...));
+[[noreturn]] void LIBCBCT_THROW(std::format_string<Args...> fmt, Args &&...args) {
+    throw E(std::format(fmt, std::forward<Args>(args)...));
 }
 
 template <typename... Args>
-void LIBCBCT_ERROR(const char *format, Args... args) {
-    LIBCBCT_THROW<libcbct::Error>(format, args...);
+void LIBCBCT_ERROR(std::format_string<Args...> fmt, Args &&...args) {
+    LIBCBCT_THROW<libcbct::Error>(fmt, std::forward<Args>(args)...);
 }
 
 // -----------------------------------------------------------------------------
@@ -76,7 +74,7 @@ void LIBCBCT_ERROR(const char *format, Args... args) {
 #endif
 
 inline std::string ASRT_LABEL(const char *predicate, const char *file, int line, const char *funcname) {
-    return STR_FMT("Assertion \"%s\" failed in %s L-%d (%s)", predicate, file, line, funcname);
+    return STR_FMT("Assertion \"{}\" failed in {} L-{} ({})", predicate, file, line, funcname);
 }
 
 #if !defined(LIBCBCT_DISABLE_ASSERT)

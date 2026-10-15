@@ -35,7 +35,7 @@ TEST(ProgressBar, PreservesTheEntireDescriptionAndHandlesImmediateZeroProgress) 
     ::testing::internal::CaptureStdout();
     bar.setDescription("");
     bar.step(0);
-    bar.setDescription("%s-%d!", "label", 123);
+    bar.setDescription("{}-{}!", "label", 123);
     bar.setWidth(1);
     bar.step();
     bar.finish();
@@ -110,7 +110,7 @@ TEST(ProgressBar, ConcurrentUpdatesAndFinishRemainConsistent) {
     for (int i = 0; i < 4; ++i) {
         workers.emplace_back([&bar] {
             for (int j = 0; j < 50; ++j) {
-                bar.setDescription("work-%d", j);
+                bar.setDescription("work-{}", j);
                 bar.setWidth(8);
                 bar.step();
             }

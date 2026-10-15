@@ -9,8 +9,10 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <format>
 #include <mutex>
 #include <string>
+#include <utility>
 
 #include "Logging.h"
 
@@ -34,8 +36,8 @@ public:
     }
 
     template <typename... Args>
-    void setDescription(const char *format, const Args &...args) {
-        const auto description = STR_FMT(format, args...);
+    void setDescription(std::format_string<Args...> fmt, Args &&...args) {
+        const auto description = STR_FMT(fmt, std::forward<Args>(args)...);
         std::lock_guard<std::mutex> lock(m_mtx);
         m_description = description;
     }
