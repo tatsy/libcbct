@@ -2,6 +2,8 @@
 
 #include "Reconstruction/Slang/FdkCudaParameters.h"
 
+namespace libcbct::tests {
+
 namespace {
 
 nlohmann::json reflectionFor(const std::string &entry) {
@@ -36,3 +38,5 @@ TEST(SlangCudaLayout, RejectsChangedDispatchSizeAndGlobalBindings) {
 }
 
 }  // namespace
+
+}  // namespace libcbct::tests

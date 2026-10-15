@@ -15,9 +15,12 @@
 #include "libcbct.h"
 
 namespace fs = std::filesystem;
+namespace cbct = libcbct;
+
+namespace {
 
 static void onTrackbar(int pos, void *userdata) {
-    const VolumeF32 &tomogram = *(VolumeF32 *)userdata;
+    const cbct::VolumeF32 &tomogram = *(cbct::VolumeF32 *)userdata;
     const int volSize = tomogram.size<0>();
     const cv::Mat slice(volSize, volSize, CV_32FC1, tomogram.ptr() + (volSize * volSize * pos));
     cv::imshow("volume", slice);
@@ -29,9 +32,9 @@ int run(int argc, char **argv) {
     options.add_options()("h,help", "Print help");
     options.add_options()("c,config", "Input configuration file", cxxopts::value<std::string>());
     options.add_options()("s,size", "Reconstruction volume size (cubic)", cxxopts::value<int>()->default_value("512"));
-    options.add_options()("b,backend", "Reconstruction backend: auto, cpu, cuda, slang-ptx, vulkan",
+    options.add_options()("b,backend", "Reconstruction backend: auto, cpu, cuda, vulkan (slang-ptx aliases cuda)",
                           cxxopts::value<std::string>()->default_value("auto"));
-#if defined(LIBCBCT_WITH_SLANG_CUDA)
+#if defined(LIBCBCT_WITH_CUDA)
     const std::string defaultPtxDirectory = LIBCBCT_SLANG_KERNEL_DIR;
 #else
     const std::string defaultPtxDirectory;
@@ -56,6 +59,7 @@ int run(int argc, char **argv) {
     }
 
     std::string backend = configs["backend"].as<std::string>();
+    if (backend == "slang-ptx") backend = "cuda";
     if (backend == "auto") {
         backend = "cpu";
 #if defined(LIBCBCT_WITH_CUDA)
@@ -63,31 +67,24 @@ int run(int argc, char **argv) {
         if (cudaGetDeviceCount(&deviceCount) == cudaSuccess && deviceCount > 0) backend = "cuda";
 #endif
     }
-    std::unique_ptr<ReconstructionBase> fdk;
+    std::unique_ptr<cbct::ReconstructionBase> fdk;
     if (backend == "cpu") {
-        fdk = std::make_unique<FeldkampCPU>(RampFilter::SheppLogan);
+        fdk = std::make_unique<cbct::FeldkampCPU>(cbct::RampFilter::SheppLogan);
     } else if (backend == "cuda") {
 #if defined(LIBCBCT_WITH_CUDA)
-        fdk = std::make_unique<FeldkampCUDA>(RampFilter::SheppLogan);
+        fdk = std::make_unique<cbct::FeldkampCUDA>(configs["ptx-dir"].as<std::string>(), cbct::RampFilter::SheppLogan);
 #else
         throw libcbct::InvalidArgument("CUDA backend is unavailable; rebuild with LIBCBCT_WITH_CUDA=ON");
 #endif
-    } else if (backend == "slang-ptx") {
-#if defined(LIBCBCT_WITH_SLANG_CUDA)
-        fdk = std::make_unique<FeldkampSlangCUDA>(configs["ptx-dir"].as<std::string>(), RampFilter::SheppLogan);
-#else
-        throw libcbct::InvalidArgument(
-            "Slang PTX backend is unavailable; rebuild with LIBCBCT_WITH_CUDA=ON and LIBCBCT_WITH_SLANG=ON");
-#endif
     } else if (backend == "vulkan") {
 #if defined(LIBCBCT_WITH_VULKAN)
-        fdk = std::make_unique<FeldkampVulkan>(configs["spirv-dir"].as<std::string>(),
-            RampFilter::SheppLogan, configs["vulkan-device"].as<int>());
+        fdk = std::make_unique<cbct::FeldkampVulkan>(configs["spirv-dir"].as<std::string>(),
+            cbct::RampFilter::SheppLogan, configs["vulkan-device"].as<int>());
 #else
         throw libcbct::InvalidArgument("Vulkan backend is unavailable; rebuild with LIBCBCT_WITH_VULKAN=ON");
 #endif
     } else {
-        throw libcbct::InvalidArgument("Unknown backend '" + backend + "'; choose auto, cpu, cuda, slang-ptx, or vulkan");
+        throw libcbct::InvalidArgument("Unknown backend '" + backend + "'; choose auto, cpu, cuda, or vulkan");
     }
     const int volSize = configs["size"].as<int>();
     if (volSize <= 0) throw libcbct::InvalidArgument("Reconstruction size must be positive");
@@ -95,15 +92,15 @@ int run(int argc, char **argv) {
         std::cout << options.help() << std::endl;
         return 0;
     }
-    LIBCBCT_INFO("Reconstruction backend: %s", backend.c_str());
-    LIBCBCT_INFO("OpenMP threads: %d", omp_get_max_threads());
-    if (backend == "cuda" || backend == "slang-ptx") showCudaInfo();
+    cbct::LIBCBCT_INFO("Reconstruction backend: %s", backend.c_str());
+    cbct::LIBCBCT_INFO("OpenMP threads: %d", omp_get_max_threads());
+    if (backend == "cuda") cbct::showCudaInfo();
 
     // Read device parameters
     fs::path configPath(configs["config"].as<std::string>());
-    JsonSettingImporter config;
+    cbct::JsonSettingImporter config;
     config.read(configPath.string());
-    LIBCBCT_DEBUG("Load config file from %s", configPath.string().c_str());
+    cbct::LIBCBCT_DEBUG("Load config file from %s", configPath.string().c_str());
 
     const float sod = config.getFloat("SOD");
     const float sdd = config.getFloat("SDD");
@@ -114,41 +111,41 @@ int run(int argc, char **argv) {
     const int numberOfProj = config.getInt("NumberOfProj");
     const bool clockwise = config.getInt("Clockwise", 1) != 0;
     const float freeRay = 65535.0f;  // Assuming 16-bit images
-    LIBCBCT_DEBUG("SOD: %f mm", sod);
-    LIBCBCT_DEBUG("SDD: %f mm", sdd);
-    LIBCBCT_DEBUG("Pixel size: (%f mm, %f mm)", pixelSizeX, pixelSizeY);
+    cbct::LIBCBCT_DEBUG("SOD: %f mm", sod);
+    cbct::LIBCBCT_DEBUG("SDD: %f mm", sdd);
+    cbct::LIBCBCT_DEBUG("Pixel size: (%f mm, %f mm)", pixelSizeX, pixelSizeY);
 
     // Import sinogram
     const fs::path imagePath = configPath.parent_path() / "projections";
     if (!fs::exists(imagePath)) {
-        LIBCBCT_THROW<libcbct::IOError>("Projection folder does not exist: %s", imagePath.string().c_str());
+        cbct::LIBCBCT_THROW<libcbct::IOError>("Projection folder does not exist: %s", imagePath.string().c_str());
     }
 
-    VolumeF32 sinogram = ImageSequenceImporter(imagePath.string(), ".tif", clockwise).read();
+    cbct::VolumeF32 sinogram = cbct::ImageSequenceImporter(imagePath.string(), ".tif", clockwise).read();
     sinogram.forEach([freeRay](float v) -> float { return -std::log((v + 1.0f) / freeRay); });
 
     if (sinogram.size<0>() != detWidth || sinogram.size<1>() != detHeight || sinogram.size<2>() - 1 != numberOfProj) {
-        LIBCBCT_ERROR("Sinogram size mismatch! Expected: (%d, %d, %d), Actual: (%zu, %zu, %zu)", detWidth, detHeight,
+        cbct::LIBCBCT_ERROR("Sinogram size mismatch! Expected: (%d, %d, %d), Actual: (%zu, %zu, %zu)", detWidth, detHeight,
                       numberOfProj, sinogram.size<0>(), sinogram.size<1>(), sinogram.size<2>());
     }
 
-    LIBCBCT_DEBUG("Detector size: (%d, %d)", detWidth, detHeight);
-    LIBCBCT_DEBUG("Sinogram: %dx%dx%d", detWidth, detHeight, numberOfProj);
+    cbct::LIBCBCT_DEBUG("Detector size: (%d, %d)", detWidth, detHeight);
+    cbct::LIBCBCT_DEBUG("Sinogram: %dx%dx%d", detWidth, detHeight, numberOfProj);
 
     // Setup projection geometry
     const float voxelSize = pixelSizeY * (sod / sdd) * ((float)detHeight / (float)volSize);
-    LIBCBCT_DEBUG("Reconstruction volume size: %d (%f mm/voxel)", volSize, voxelSize);
+    cbct::LIBCBCT_DEBUG("Reconstruction volume size: %d (%f mm/voxel)", volSize, voxelSize);
 
-    Geometry geometry(vec2i(detWidth, detHeight), vec2f(pixelSizeX, pixelSizeY), vec3i(volSize, volSize, volSize), sod,
+    cbct::Geometry geometry(cbct::vec2i(detWidth, detHeight), cbct::vec2f(pixelSizeX, pixelSizeY), cbct::vec3i(volSize, volSize, volSize), sod,
                       sdd);
 
     // Reconstruction
-    VolumeF32 tomogram = fdk->reconstruct(sinogram, geometry);
+    cbct::VolumeF32 tomogram = fdk->reconstruct(sinogram, geometry);
 
     // Normalize CT values
     float minVal, maxVal;
     std::tie(minVal, maxVal) = tomogram.getMinMax();
-    LIBCBCT_DEBUG("min=%f, max=%f", minVal, maxVal);
+    cbct::LIBCBCT_DEBUG("min=%f, max=%f", minVal, maxVal);
 
     tomogram.forEach([minVal, maxVal](float x) { return std::max(0.0f, x) / maxVal; });
 
@@ -157,9 +154,9 @@ int run(int argc, char **argv) {
         configPath.parent_path() / "output" / std::format("volume-{0:d}x{0:d}x{0:d}-uint16.raw", volSize);
     fs::create_directories(outputPath.parent_path());
 
-    RawVolumeExporter exporter;
-    exporter.write(outputPath.string(), tomogram, VolumeType::Uint16);
-    LIBCBCT_DEBUG("Reconstructed volume saved: %s", outputPath.string().c_str());
+    cbct::RawVolumeExporter exporter;
+    exporter.write(outputPath.string(), tomogram, cbct::VolumeType::Uint16);
+    cbct::LIBCBCT_DEBUG("Reconstructed volume saved: %s", outputPath.string().c_str());
 
     // Preview
     if (configs.count("no-preview")) return 0;
@@ -172,6 +169,8 @@ int run(int argc, char **argv) {
 
     return 0;
 }
+
+}  // namespace
 
 int main(int argc, char **argv) {
     try {

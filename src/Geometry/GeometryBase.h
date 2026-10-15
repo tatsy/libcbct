@@ -9,6 +9,8 @@
 #include "Utils/Vec.h"
 #include "Utils/CudaUtils.h"
 
+namespace libcbct {
+
 struct LIBCBCT_API Geometry {
     Geometry() {
     }
@@ -51,5 +53,7 @@ __both__ inline vec3f vox2pix(const vec3i &xyz, float theta, const Geometry &geo
     const vec3f v = (vec3f(xyz) - vec3f(cx, cy, cz)) * voxelSize;
     return project(v, theta, geom);
 }
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_GEOMETRY_BASE_H

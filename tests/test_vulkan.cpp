@@ -8,6 +8,8 @@
 #include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.h>
 
+namespace libcbct::tests {
+
 namespace {
 
 struct Allocator {
@@ -110,3 +112,5 @@ TEST(VulkanDependencies, AllocatesMappedBufferUsingHppDeviceAndVma) {
 }
 
 }  // namespace
+
+}  // namespace libcbct::tests

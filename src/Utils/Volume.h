@@ -16,6 +16,8 @@
 #include "Common/OpenMP.h"
 #include "Utils/ImageUtils.h"
 
+namespace libcbct {
+
 enum class VolumeType {
     Uint8,
     Uint16,
@@ -268,5 +270,7 @@ template <>
 inline VolumeType Volume<double>::type() const {
     return VolumeType::Float64;
 }
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_VOLUME_H

@@ -8,6 +8,8 @@
 #include "Reconstruction/FeldkampCUDA.h"
 #endif
 
+namespace libcbct::tests {
+
 using namespace testing_utils;
 
 namespace {
@@ -36,7 +38,7 @@ INSTANTIATE_TEST_SUITE_P(Filters, FeldkampCPUTest, ::testing::Values(RampFilter:
 
 #if defined(LIBCBCT_WITH_CUDA)
 // Built with CUDA, but the machine may still have no GPU (e.g. CI runners): skip instead of failing
-TEST(FeldkampCUDA, MatchesCPU) {
+TEST(FeldkampCUDA, DefaultKernelDirectoryMatchesCPU) {
     int deviceCount = 0;
     if (cudaGetDeviceCount(&deviceCount) != cudaSuccess || deviceCount == 0) {
         GTEST_SKIP() << "No CUDA device available";
@@ -49,3 +51,5 @@ TEST(FeldkampCUDA, MatchesCPU) {
     EXPECT_LT(maxAbsDiff(cpu, gpu), 1e-6);
 }
 #endif
+
+}  // namespace libcbct::tests

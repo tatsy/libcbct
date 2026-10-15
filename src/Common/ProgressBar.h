@@ -12,6 +12,8 @@
 #include <sstream>
 #include <mutex>
 
+namespace libcbct {
+
 class ProgressBar {
 public:
     ProgressBar() {
@@ -98,5 +100,7 @@ private:
     std::chrono::system_clock::time_point m_start;
     std::mutex m_mtx;
 };
+
+}  // namespace libcbct
 
 #endif  // PROGRESS_BAR_H

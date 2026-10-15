@@ -6,6 +6,8 @@
 #include "Common/Logging.h"
 #include "pocketfft_hdronly.h"
 
+namespace libcbct {
+
 namespace pfft = pocketfft;
 
 size_t paddedFFTLength(size_t detWidth) {
@@ -58,3 +60,5 @@ std::vector<float> makeCosineWeights(const Geometry &geometry, size_t detWidth, 
     }
     return weights;
 }
+
+}  // namespace libcbct

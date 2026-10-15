@@ -1,5 +1,6 @@
 data/*
 build/*
+CMakeUserPresets.json
 .DS_Store
 
 *.raw

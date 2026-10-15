@@ -10,6 +10,8 @@
 #include "Common/Api.h"
 #include "Utils/Volume.h"
 
+namespace libcbct {
+
 /**
  * @brief Interface class for file importer
  */
@@ -19,5 +21,7 @@ public:
     virtual ~BaseImporter() = default;
     virtual VolumeF32 read() const = 0;
 };
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_BASE_IMPORTER_H

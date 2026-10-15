@@ -9,6 +9,8 @@
 
 #include "ReconstructionBase.h"
 
+namespace libcbct {
+
 //! Smallest power of two >= 2 * detWidth, so that circular convolution equals linear convolution
 LIBCBCT_API size_t paddedFFTLength(size_t detWidth);
 
@@ -20,5 +22,7 @@ LIBCBCT_API std::vector<float> makeRampResponse(size_t nPad, double dp, RampFilt
 
 //! FDK cosine pre-weights SDD / sqrt(SDD^2 + u^2 + v^2) for each detector pixel
 LIBCBCT_API std::vector<float> makeCosineWeights(const Geometry &geometry, size_t detWidth, size_t detHeight);
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_FILTER_UTILS_H

@@ -14,7 +14,8 @@
 #include "Reconstruction/FeldkampCUDA.h"
 #endif
 
-using namespace libcbct;
+namespace libcbct::tests {
+
 using namespace testing_utils;
 
 namespace {
@@ -136,3 +137,5 @@ TEST(FeldkampVulkanInput, RejectsInvalidInputBeforeLoadingSpirvOrInitializingVul
 }
 
 }  // namespace
+
+}  // namespace libcbct::tests

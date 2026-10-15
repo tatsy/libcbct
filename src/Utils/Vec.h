@@ -1,6 +1,7 @@
 #pragma once
 
-#include <math.h>
+#include <algorithm>
+#include <cmath>
 #include <stdio.h>
 #include <stdint.h>
 
@@ -9,6 +10,8 @@
 #else
   #define __both__
 #endif
+
+namespace libcbct {
 
 // Default vector type template
 template <typename T, int N>
@@ -389,6 +392,8 @@ _define_vec_types(double, d);
 
 template <typename T>
 inline __both__ T clamp(const T &val, const T &lo, const T &hi) {
+    using std::min;
+    using std::max;
     return min(hi, max(lo, val));
 }
 
@@ -397,29 +402,29 @@ inline __both__ T clamp(const T &val, const T &hi) {
     return clamp(val, (T)0, hi);
 }
 
-#define _define_float_functor(func)                                     \
-    template <typename T>                                               \
-    inline __both__ vec_t<T, 2> func(const vec_t<T, 2> &v) {            \
-        return vec_t<T, 2>(func(v.x), func(v.y));                       \
-    }                                                                   \
-                                                                        \
-    template <typename T>                                               \
-    inline __both__ vec_t<T, 3> func(const vec_t<T, 3> &v) {            \
-        return vec_t<T, 3>(func(v.x), func(v.y), func(v.z));            \
-    }                                                                   \
-                                                                        \
-    template <typename T>                                               \
-    inline __both__ vec_t<T, 4> func(const vec_t<T, 4> &v) {            \
-        return vec_t<T, 4>(func(v.x), func(v.y), func(v.z), func(v.w)); \
+#define _define_float_functor(func, scalarFunc)                                                 \
+    template <typename T>                                                                       \
+    inline __both__ vec_t<T, 2> func(const vec_t<T, 2> &v) {                                    \
+        return vec_t<T, 2>(scalarFunc(v.x), scalarFunc(v.y));                                   \
+    }                                                                                           \
+                                                                                                \
+    template <typename T>                                                                       \
+    inline __both__ vec_t<T, 3> func(const vec_t<T, 3> &v) {                                    \
+        return vec_t<T, 3>(scalarFunc(v.x), scalarFunc(v.y), scalarFunc(v.z));                  \
+    }                                                                                           \
+                                                                                                \
+    template <typename T>                                                                       \
+    inline __both__ vec_t<T, 4> func(const vec_t<T, 4> &v) {                                    \
+        return vec_t<T, 4>(scalarFunc(v.x), scalarFunc(v.y), scalarFunc(v.z), scalarFunc(v.w)); \
     }
 
 // clang-format off
-_define_float_functor(rcp)
-_define_float_functor(sin)
-_define_float_functor(cos)
-_define_float_functor(abs)
-_define_float_functor(sqrt)
-_define_float_functor(saturate)
+_define_float_functor(rcp, rcp)
+_define_float_functor(sin, std::sin)
+_define_float_functor(cos, std::cos)
+_define_float_functor(abs, std::abs)
+_define_float_functor(sqrt, std::sqrt)
+_define_float_functor(saturate, saturate)
 // clang-format on
 
 #undef _define_float_functor
@@ -428,36 +433,36 @@ _define_float_functor(saturate)
 // binary functors
 // -------------------------------------------------------
 
-#define _define_binary_functor(fct)                                                                                  \
-    template <typename T>                                                                                            \
-    __both__ vec_t<T, 1> fct(const vec_t<T, 1> &a, const vec_t<T, 1> &b) {                                           \
-        return vec_t<T, 1>(fct(a.x, b.x));                                                                           \
-    }                                                                                                                \
-                                                                                                                     \
-    template <typename T>                                                                                            \
-    __both__ vec_t<T, 2> fct(const vec_t<T, 2> &a, const vec_t<T, 2> &b) {                                           \
-        return vec_t<T, 2>(fct(a.x, b.x), fct(a.y, b.y));                                                            \
-    }                                                                                                                \
-                                                                                                                     \
-    template <typename T>                                                                                            \
-    __both__ vec_t<T, 3> fct(const vec_t<T, 3> &a, const vec_t<T, 3> &b) {                                           \
-        return vec_t<T, 3>(fct(a.x, b.x), fct(a.y, b.y), fct(a.z, b.z));                                             \
-    }                                                                                                                \
-                                                                                                                     \
-    template <typename T1, typename T2>                                                                              \
-    __both__ vec_t<typename BinaryOpResultType<T1, T2>::type, 3> fct(const vec_t<T1, 3> &a, const vec_t<T2, 3> &b) { \
-        return vec_t<typename BinaryOpResultType<T1, T2>::type, 3>(fct(a.x, b.x), fct(a.y, b.y), fct(a.z, b.z));     \
-    }                                                                                                                \
-                                                                                                                     \
-    template <typename T>                                                                                            \
-    __both__ vec_t<T, 4> fct(const vec_t<T, 4> &a, const vec_t<T, 4> &b) {                                           \
-        return vec_t<T, 4>(fct(a.x, b.x), fct(a.y, b.y), fct(a.z, b.z), fct(a.w, b.w));                              \
+#define _define_binary_functor(fct, scalarFunc)                                                                                       \
+    template <typename T>                                                                                                             \
+    __both__ vec_t<T, 1> fct(const vec_t<T, 1> &a, const vec_t<T, 1> &b) {                                                            \
+        return vec_t<T, 1>(scalarFunc(a.x, b.x));                                                                                     \
+    }                                                                                                                                 \
+                                                                                                                                      \
+    template <typename T>                                                                                                             \
+    __both__ vec_t<T, 2> fct(const vec_t<T, 2> &a, const vec_t<T, 2> &b) {                                                            \
+        return vec_t<T, 2>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y));                                                               \
+    }                                                                                                                                 \
+                                                                                                                                      \
+    template <typename T>                                                                                                             \
+    __both__ vec_t<T, 3> fct(const vec_t<T, 3> &a, const vec_t<T, 3> &b) {                                                            \
+        return vec_t<T, 3>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y), scalarFunc(a.z, b.z));                                         \
+    }                                                                                                                                 \
+                                                                                                                                      \
+    template <typename T1, typename T2>                                                                                               \
+    __both__ vec_t<typename BinaryOpResultType<T1, T2>::type, 3> fct(const vec_t<T1, 3> &a, const vec_t<T2, 3> &b) {                  \
+        return vec_t<typename BinaryOpResultType<T1, T2>::type, 3>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y), scalarFunc(a.z, b.z)); \
+    }                                                                                                                                 \
+                                                                                                                                      \
+    template <typename T>                                                                                                             \
+    __both__ vec_t<T, 4> fct(const vec_t<T, 4> &a, const vec_t<T, 4> &b) {                                                            \
+        return vec_t<T, 4>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y), scalarFunc(a.z, b.z), scalarFunc(a.w, b.w));                   \
     }
 
     // clang-format off
-_define_binary_functor(divRoundUp)
-_define_binary_functor(min)
-_define_binary_functor(max)
+_define_binary_functor(divRoundUp, libcbct::divRoundUp)
+_define_binary_functor(min, std::min)
+_define_binary_functor(max, std::max)
 // clang-format on
 
 #undef _define_binary_functor
@@ -642,3 +647,5 @@ template <typename T>
 inline __both__ vec_t<T, 3> normalize(const vec_t<T, 3> &v) {
     return v * 1.0f / length(v);
 }
+
+}  // namespace libcbct

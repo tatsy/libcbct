@@ -1,90 +1,339 @@
 {
-  "version": 6,
+  "version": 5,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 20,
+    "minor": 24,
     "patch": 0
   },
   "configurePresets": [
     {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "installDir": "${sourceDir}/build/install/${presetName}",
+      "cacheVariables": {
+        "LIBCBCT_WITH_CUDA": "OFF",
+        "LIBCBCT_WITH_VULKAN": "OFF",
+        "LIBCBCT_WITH_OPENMP": "OFF",
+        "LIBCBCT_BUILD_TESTS": "ON"
+      }
+    },
+    {
       "name": "msvc2022",
-      "displayName": "Windows x64",
+      "displayName": "Windows x64 | CPU",
+      "inherits": "base",
       "generator": "Visual Studio 17 2022",
-      "binaryDir": "${sourceDir}/build",
-      "architecture": {
-        "value": "x64",
-        "strategy": "set"
+      "architecture": "x64",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
       },
       "cacheVariables": {
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
         "LIBCBCT_WITH_OPENMP": "ON"
+      }
+    },
+    {
+      "name": "msvc2022-cuda",
+      "displayName": "Windows x64 | CUDA",
+      "inherits": "msvc2022",
+      "cacheVariables": {
+        "LIBCBCT_WITH_CUDA": "ON"
+      }
+    },
+    {
+      "name": "msvc2022-vulkan",
+      "displayName": "Windows x64 | Vulkan",
+      "inherits": "msvc2022",
+      "cacheVariables": {
+        "LIBCBCT_WITH_VULKAN": "ON"
+      }
+    },
+    {
+      "name": "msvc2022-cuda-vulkan",
+      "displayName": "Windows x64 | CUDA + Vulkan",
+      "inherits": "msvc2022-cuda",
+      "cacheVariables": {
+        "LIBCBCT_WITH_VULKAN": "ON"
+      }
+    },
+    {
+      "name": "macos-base",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "Ninja",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
       },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": ["Windows"],
-          "intelliSenseMode": "windows-msvc-x64"
-        }
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
     {
       "name": "macos-debug",
-      "displayName": "MacOS | Debug",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
+      "displayName": "macOS | CPU | Debug",
+      "inherits": "macos-base",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
-        "LIBCBCT_WITH_OPENMP": "OFF"
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": ["macOS"],
-          "intelliSenseMode": "ios-clang-arm64"
-        }
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
       "name": "macos-release",
-      "displayName": "MacOS | Release",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
+      "displayName": "macOS | CPU | Release",
+      "inherits": "macos-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "macos-vulkan-debug",
+      "displayName": "macOS | Vulkan | Debug",
+      "inherits": "macos-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "LIBCBCT_WITH_VULKAN": "ON"
+      }
+    },
+    {
+      "name": "macos-vulkan-release",
+      "displayName": "macOS | Vulkan | Release",
+      "inherits": "macos-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install",
-        "LIBCBCT_WITH_OPENMP": "ON"
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "hostOS": ["macOS"],
-          "intelliSenseMode": "ios-clang-arm64"
-        }
+        "LIBCBCT_WITH_VULKAN": "ON"
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "Release",
-      "configurePreset": "msvc2022",
-      "configuration": "Release",
+      "name": "build-base",
+      "hidden": true,
       "jobs": 4
+    },
+    {
+      "name": "build-macos",
+      "hidden": true,
+      "inherits": "build-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      }
+    },
+    {
+      "name": "build-windows",
+      "hidden": true,
+      "inherits": "build-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
     },
     {
       "name": "Debug",
+      "inherits": "build-windows",
       "configurePreset": "msvc2022",
-      "configuration": "Debug",
-      "jobs": 4
+      "configuration": "Debug"
+    },
+    {
+      "name": "Release",
+      "inherits": "build-windows",
+      "configurePreset": "msvc2022",
+      "configuration": "Release"
     },
     {
       "name": "RelWithDebInfo",
+      "inherits": "build-windows",
       "configurePreset": "msvc2022",
-      "configuration": "RelWithDebInfo",
-      "jobs": 4
+      "configuration": "RelWithDebInfo"
     },
     {
       "name": "MinSizeRel",
+      "inherits": "build-windows",
       "configurePreset": "msvc2022",
-      "configuration": "MinSizeRel",
-      "jobs": 4
+      "configuration": "MinSizeRel"
+    },
+    {
+      "name": "msvc2022-cuda-debug",
+      "inherits": "build-windows",
+      "configurePreset": "msvc2022-cuda",
+      "configuration": "Debug"
+    },
+    {
+      "name": "msvc2022-cuda-release",
+      "inherits": "build-windows",
+      "configurePreset": "msvc2022-cuda",
+      "configuration": "Release"
+    },
+    {
+      "name": "msvc2022-vulkan-debug",
+      "inherits": "build-windows",
+      "configurePreset": "msvc2022-vulkan",
+      "configuration": "Debug"
+    },
+    {
+      "name": "msvc2022-vulkan-release",
+      "inherits": "build-windows",
+      "configurePreset": "msvc2022-vulkan",
+      "configuration": "Release"
+    },
+    {
+      "name": "msvc2022-cuda-vulkan-debug",
+      "inherits": "build-windows",
+      "configurePreset": "msvc2022-cuda-vulkan",
+      "configuration": "Debug"
+    },
+    {
+      "name": "msvc2022-cuda-vulkan-release",
+      "inherits": "build-windows",
+      "configurePreset": "msvc2022-cuda-vulkan",
+      "configuration": "Release"
+    },
+    {
+      "name": "macos-debug",
+      "inherits": "build-macos",
+      "configurePreset": "macos-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "macos-release",
+      "inherits": "build-macos",
+      "configurePreset": "macos-release",
+      "configuration": "Release"
+    },
+    {
+      "name": "macos-vulkan-debug",
+      "inherits": "build-macos",
+      "configurePreset": "macos-vulkan-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "macos-vulkan-release",
+      "inherits": "build-macos",
+      "configurePreset": "macos-vulkan-release",
+      "configuration": "Release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "test-base",
+      "hidden": true,
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "test-macos",
+      "hidden": true,
+      "inherits": "test-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      }
+    },
+    {
+      "name": "test-windows",
+      "hidden": true,
+      "inherits": "test-base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "environment": {
+        "PATH": "${sourceDir}/build/bin;$penv{PATH}"
+      }
+    },
+    {
+      "name": "Debug",
+      "inherits": "test-windows",
+      "configurePreset": "msvc2022",
+      "configuration": "Debug"
+    },
+    {
+      "name": "Release",
+      "inherits": "test-windows",
+      "configurePreset": "msvc2022",
+      "configuration": "Release"
+    },
+    {
+      "name": "RelWithDebInfo",
+      "inherits": "test-windows",
+      "configurePreset": "msvc2022",
+      "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "MinSizeRel",
+      "inherits": "test-windows",
+      "configurePreset": "msvc2022",
+      "configuration": "MinSizeRel"
+    },
+    {
+      "name": "msvc2022-cuda-debug",
+      "inherits": "test-windows",
+      "configurePreset": "msvc2022-cuda",
+      "configuration": "Debug"
+    },
+    {
+      "name": "msvc2022-cuda-release",
+      "inherits": "test-windows",
+      "configurePreset": "msvc2022-cuda",
+      "configuration": "Release"
+    },
+    {
+      "name": "msvc2022-vulkan-debug",
+      "inherits": "test-windows",
+      "configurePreset": "msvc2022-vulkan",
+      "configuration": "Debug"
+    },
+    {
+      "name": "msvc2022-vulkan-release",
+      "inherits": "test-windows",
+      "configurePreset": "msvc2022-vulkan",
+      "configuration": "Release"
+    },
+    {
+      "name": "msvc2022-cuda-vulkan-debug",
+      "inherits": "test-windows",
+      "configurePreset": "msvc2022-cuda-vulkan",
+      "configuration": "Debug"
+    },
+    {
+      "name": "msvc2022-cuda-vulkan-release",
+      "inherits": "test-windows",
+      "configurePreset": "msvc2022-cuda-vulkan",
+      "configuration": "Release"
+    },
+    {
+      "name": "macos-debug",
+      "inherits": "test-macos",
+      "configurePreset": "macos-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "macos-release",
+      "inherits": "test-macos",
+      "configurePreset": "macos-release",
+      "configuration": "Release"
+    },
+    {
+      "name": "macos-vulkan-debug",
+      "inherits": "test-macos",
+      "configurePreset": "macos-vulkan-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "macos-vulkan-release",
+      "inherits": "test-macos",
+      "configurePreset": "macos-vulkan-release",
+      "configuration": "Release"
     }
   ]
 }

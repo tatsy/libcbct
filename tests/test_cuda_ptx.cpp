@@ -12,6 +12,8 @@
 #include "Utils/CudaPtxModule.h"
 #include "Utils/DeviceBuffer.h"
 
+namespace libcbct::tests {
+
 namespace {
 
 // Model current Slang CUDA output: scalar entry arguments and a constant global block.
@@ -166,3 +168,5 @@ TEST(CudaPtxInput, RejectsInvalidInputsBeforeInitializingCuda) {
 }
 
 }  // namespace
+
+}  // namespace libcbct::tests

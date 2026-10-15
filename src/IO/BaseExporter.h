@@ -10,6 +10,8 @@
 #include "Common/Api.h"
 #include "Utils/Volume.h"
 
+namespace libcbct {
+
 /**
  * @brief Interface class for file exporter
  */
@@ -20,5 +22,7 @@ public:
     virtual void write(const std::string &filename, const VolumeF32 &tomogram,
                        VolumeType type = VolumeType::Float32) const = 0;
 };
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_BASE_EXPORTER_H

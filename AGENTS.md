@@ -14,13 +14,21 @@
 - Write code comments in English.
 - Write commit comments also in English.
 
+## C++ Namespaces
+
+- Define library-owned C++ classes, functions, types, and constants in `libcbct`.
+- Use `libcbct::detail` for implementation details needed in headers and anonymous namespaces for helpers local to a `.cpp` file.
+- Keep namespace aliases and using directives out of public headers. Applications may use a local alias such as `namespace cbct = libcbct;`.
+- Qualify library references inside macros so that they work from a consumer's namespace.
+- Keep `main`, external ABI entry points, and third-party declarations in their required scopes. Shader entry-point names are independent of C++ namespaces.
+
 ## GPU Backend Development Roadmap
 
-- Preserve the working CPU and CUDA implementations while migrating. Do not replace the entire CUDA backend with Vulkan in a single step.
-- **Phase 1 — Migrate existing CUDA compute kernels to Slang.**
-  - Start with the existing FDK/backprojection kernels, keeping reconstruction behavior and numerical conventions unchanged.
+- Preserve CPU and CUDA backend support while migrating. CUDA executes Slang PTX and Vulkan executes Slang SPIR-V; keep GPU kernel sources in Slang rather than maintaining handwritten `.cu` implementations.
+- **Phase 1 — Use Slang kernels through the CUDA backend.**
+  - Keep the validated Slang FDK/backprojection kernels' reconstruction behavior and numerical conventions unchanged. The original handwritten CUDA kernels have been retired after numerical validation and a recorded performance comparison.
   - Compile Slang kernels to PTX and execute them through the existing CUDA backend. Reuse the current CUDA memory management and cuFFT integration where practical.
-  - Verify correctness against the existing CUDA and CPU implementations, and benchmark execution time before replacing or retiring the original kernels.
+  - Verify future kernel changes against the CPU reference and established numerical fixtures, and benchmark execution time against the [recorded CUDA/PTX baseline](docs/benchmarks/cuda-slang-transition.md).
   - Keep the Slang code portable so that the same core compute kernels can later target SPIR-V.
 - **Phase 2 — Add a Vulkan compute backend.**
   - Compile the validated Slang kernels to SPIR-V and implement Vulkan device, resource, pipeline, command submission, and synchronization management.
@@ -44,7 +52,7 @@
 ### Backend Selection and Data Movement
 
 - Select implementations per operator, with an overall backend setting supplying defaults and operator-specific settings providing overrides.
-- Treat CPU, CUDA, and Vulkan as execution/resource backends. Treat native CUDA and Slang PTX as CUDA operator implementation choices that can share CUDA memory and execution resources.
+- Treat CPU, CUDA, and Vulkan as execution/resource backends. CUDA operators use Slang PTX with CUDA memory and cuFFT; `slang-ptx` is a compatibility alias for `cuda`, not an additional backend or implementation choice.
 - Use backend-neutral buffer/view interfaces carrying shape, type, layout, and device/context ownership. Keep raw CUDA and Vulkan handles inside backend adapters.
 - Centralize allocation, transfers, synchronization, workspace reuse, FFT plans, and kernel/pipeline lifetimes in execution sessions and backend services.
   - Keep consecutive operations on the same device resident in device memory and reuse their stream or command batch. Avoid adding a transfer or host wait at every operator boundary.
@@ -57,7 +65,7 @@
 ### Incremental Migration and Validation
 
 - First define operator contracts and minimal common buffer/execution interfaces, extract CPU operators, and implement one shared FDK recipe.
-- Then adapt existing CUDA, Slang PTX, and Vulkan implementations to the operator interfaces, followed by mixed-backend execution and per-operator command-line selection.
+- Then adapt the existing CUDA/PTX and Vulkan implementations to the operator interfaces, followed by mixed-backend execution and per-operator command-line selection.
 - Preserve existing reconstruction classes and their public APIs during migration. Convert them to thin configuration wrappers around the shared recipe after correctness and performance have been verified.
 - Keep existing implementations as comparison references until their replacements are validated. Test individual operators, complete reconstruction, and mixed-backend combinations, including FFT normalization, interpolation boundaries, partial tiles, and accumulation.
 - Preserve the existing FDK comparison target of maximum absolute error below `1e-6` on the established fixtures; choose additional operator tolerances according to their numerical behavior.

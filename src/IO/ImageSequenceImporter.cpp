@@ -12,6 +12,8 @@
 #include "Common/OpenMP.h"
 #include "Common/ProgressBar.h"
 
+namespace libcbct {
+
 namespace fs = std::filesystem;
 
 VolumeF32 ImageSequenceImporter::read() const {
@@ -77,3 +79,5 @@ VolumeF32 ImageSequenceImporter::read() const {
 
     return sinogram;
 }
+
+}  // namespace libcbct

@@ -10,6 +10,8 @@
 
 #include "BaseExporter.h"
 
+namespace libcbct {
+
 class LIBCBCT_API RawVolumeExporter : public BaseExporter {
 public:
     RawVolumeExporter() = default;
@@ -50,5 +52,7 @@ private:
         writer.close();
     }
 };
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_RAW_VOLUME_EXPORTER_H

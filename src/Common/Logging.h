@@ -20,6 +20,8 @@
 #define FG_BLU "\033[34m"
 #define FG_NC "\033[0m"
 
+namespace libcbct {
+
 // -----------------------------------------------------------------------------
 // Message handlers
 // -----------------------------------------------------------------------------
@@ -78,17 +80,19 @@ inline std::string ASRT_LABEL(const char *predicate, const char *file, int line,
 }
 
 #if !defined(LIBCBCT_DISABLE_ASSERT)
-#define LIBCBCT_ASSERT(PREDICATE, ...)                                                               \
-    do {                                                                                             \
-        if (!(PREDICATE)) {                                                                          \
-            std::cerr << ASRT_LABEL(#PREDICATE, __FILE__, __LINE__, __FUNCTION_NAME__) << std::endl; \
-            std::abort();                                                                            \
-        }                                                                                            \
+#define LIBCBCT_ASSERT(PREDICATE, ...)                                                                          \
+    do {                                                                                                        \
+        if (!(PREDICATE)) {                                                                                     \
+            std::cerr << ::libcbct::ASRT_LABEL(#PREDICATE, __FILE__, __LINE__, __FUNCTION_NAME__) << std::endl; \
+            std::abort();                                                                                       \
+        }                                                                                                       \
     } while (false)
 #else  // LIBCBCT_DISABLE_ASSERT
 #define LIBCBCT_ASSERT(PREDICATE, ...) \
     do {                               \
     } while (false)
 #endif  // LIBCBCT_DISABLE_ASSERT
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_LOGGING_H

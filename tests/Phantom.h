@@ -8,7 +8,7 @@
 #include "Geometry/GeometryBase.h"
 #include "Utils/Volume.h"
 
-namespace testing_utils {
+namespace libcbct::testing_utils {
 
 struct Sphere {
     double cx, cy, cz, radius, mu;
@@ -89,4 +89,4 @@ inline double maxAbsDiff(const VolumeF32 &a, const VolumeF32 &b) {
     return m;
 }
 
-}  // namespace testing_utils
+}  // namespace libcbct::testing_utils

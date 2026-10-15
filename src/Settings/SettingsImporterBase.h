@@ -10,6 +10,8 @@
 
 #include "Common/Api.h"
 
+namespace libcbct {
+
 class LIBCBCT_API SettingsImporterBase {
 public:
     SettingsImporterBase() = default;
@@ -44,5 +46,7 @@ public:
 protected:
     std::unordered_map<std::string, std::string> data;
 };
+
+}  // namespace libcbct
 
 #endif  // SETTINGS_IMPORTER_BASE_H

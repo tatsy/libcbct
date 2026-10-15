@@ -7,6 +7,8 @@
 
 #include "BaseImporter.h"
 
+namespace libcbct {
+
 class LIBCBCT_API ImageSequenceImporter : public BaseImporter {
 public:
     explicit ImageSequenceImporter(const std::string &folder, const std::string &extension, bool reverseOrder = false)
@@ -24,5 +26,7 @@ private:
     std::string extension;
     bool reverseOrder = false;
 };
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_IMAGE_SEQUENCE_IMPORTER_H

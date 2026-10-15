@@ -3,6 +3,7 @@ include(GoogleTest)
 add_executable(cbct_tests
   test_filter.cpp
   test_geometry.cpp
+  test_namespace.cpp
   test_fdk.cpp
   test_errors.cpp)
 
@@ -10,14 +11,14 @@ target_include_directories(cbct_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(cbct_tests PRIVATE ${LIBCBCT} GTest::gtest_main)
 
 if (LIBCBCT_WITH_CUDA)
-  target_sources(cbct_tests PRIVATE test_cuda_ptx.cpp)
+  target_sources(cbct_tests PRIVATE test_cuda_ptx.cpp test_fdk_cuda.cpp)
   target_link_libraries(cbct_tests PRIVATE CUDA::cuda_driver)
-endif()
-
-if (LIBCBCT_WITH_CUDA AND LIBCBCT_WITH_SLANG)
-  target_sources(cbct_tests PRIVATE test_fdk_slang_cuda.cpp)
+  add_dependencies(cbct_tests ${LIBCBCT_EXE})
   target_compile_definitions(cbct_tests PRIVATE
     LIBCBCT_SLANG_KERNEL_DIR="${LIBCBCT_SLANG_KERNEL_OUTPUT_DIR}")
+  add_test(NAME BackendCli.CudaPtxAlias
+    COMMAND ${CMAKE_COMMAND} -DCBCT_EXE=$<TARGET_FILE:${LIBCBCT_EXE}>
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/check_cuda_alias.cmake")
 endif()
 
 # PRE_TEST: list tests when ctest runs, not at build time (the DLLs may not be on PATH while building)
@@ -27,11 +28,9 @@ if (LIBCBCT_WITH_VULKAN)
   add_executable(cbct_vulkan_tests test_vulkan.cpp test_vulkan_compute.cpp)
   target_link_libraries(cbct_vulkan_tests PRIVATE ${LIBCBCT} cbct_vma GTest::gtest_main)
   gtest_discover_tests(cbct_vulkan_tests DISCOVERY_MODE PRE_TEST)
-  if (LIBCBCT_WITH_SLANG)
-    target_sources(cbct_tests PRIVATE test_fdk_vulkan.cpp)
-    target_compile_definitions(cbct_tests PRIVATE
-      LIBCBCT_SLANG_KERNEL_DIR="${LIBCBCT_SLANG_KERNEL_OUTPUT_DIR}")
-  endif()
+  target_sources(cbct_tests PRIVATE test_fdk_vulkan.cpp)
+  target_compile_definitions(cbct_tests PRIVATE
+    LIBCBCT_SLANG_KERNEL_DIR="${LIBCBCT_SLANG_KERNEL_OUTPUT_DIR}")
 endif()
 
 if (LIBCBCT_WITH_SLANG)

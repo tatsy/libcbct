@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 
+namespace libcbct {
+
 void RawVolumeExporter::write(const std::string &filename, const VolumeF32 &tomogram, VolumeType type) const {
     switch (type) {
     case VolumeType::Uint8:
@@ -25,3 +27,5 @@ void RawVolumeExporter::write(const std::string &filename, const VolumeF32 &tomo
         break;
     }
 }
+
+}  // namespace libcbct

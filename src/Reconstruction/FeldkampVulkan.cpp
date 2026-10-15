@@ -11,6 +11,8 @@
 #include "Utils/SlangSpirvKernel.h"
 #include "Utils/VulkanFft.h"
 
+namespace libcbct {
+
 namespace {
 
 std::size_t checkedProduct(std::size_t a, std::size_t b) {
@@ -31,7 +33,6 @@ std::array<std::uint32_t, 3> groups(int width, int height, int depth = 1) {
 }  // namespace
 
 VolumeF32 FeldkampVulkan::reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const {
-    using namespace libcbct;
     const auto width = sinogram.size<0>(), height = sinogram.size<1>(), projections = sinogram.size<2>();
     const auto volumeSize = geometry.volSize;
     if (width < 2 || height < 2 || !projections || geometry.detSize.x < 2 || geometry.detSize.y < 2 || volumeSize.x <= 0
@@ -150,3 +151,5 @@ VolumeF32 FeldkampVulkan::reconstruct(const VolumeF32 &sinogram, const Geometry 
     download.read(std::as_writable_bytes(std::span(tomogram.ptr(), voxels)));
     return tomogram;
 }
+
+}  // namespace libcbct

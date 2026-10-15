@@ -12,6 +12,8 @@
 
 #include "pocketfft_hdronly.h"
 
+namespace libcbct {
+
 namespace pfft = pocketfft;
 
 VolumeF32 FeldkampCPU::reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const {
@@ -89,3 +91,5 @@ VolumeF32 FeldkampCPU::reconstruct(const VolumeF32 &sinogram, const Geometry &ge
 
     return tomogram;
 }
+
+}  // namespace libcbct

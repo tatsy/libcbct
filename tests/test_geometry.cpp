@@ -3,6 +3,8 @@
 #include "Common/Constants.h"
 #include "Geometry/GeometryBase.h"
 
+namespace libcbct::tests {
+
 namespace {
 const Geometry kGeom(vec2i(128, 96), vec2f(0.8f, 0.8f), vec3i(64, 64, 64), 100.0f, 400.0f);
 }
@@ -44,3 +46,5 @@ TEST(Geometry, VoxelCentersAreSymmetric) {
         EXPECT_NEAR(a.x - 64.0f, -(b.x - 64.0f), 1e-3f) << "i=" << i;
     }
 }
+
+}  // namespace libcbct::tests

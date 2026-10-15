@@ -10,6 +10,8 @@
 #include "Common/Exception.h"
 #include "Common/Logging.h"
 
+namespace libcbct {
+
 using json = nlohmann::json;
 
 void JsonSettingImporter::read(const std::string &filename) {
@@ -31,3 +33,5 @@ void JsonSettingImporter::read(const std::string &filename) {
 
     reader.close();
 }
+
+}  // namespace libcbct

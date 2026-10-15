@@ -7,6 +7,8 @@
 
 #include "ReconstructionBase.h"
 
+namespace libcbct {
+
 class LIBCBCT_API FeldkampCPU : public ReconstructionBase {
 public:
     FeldkampCPU(RampFilter filter = RampFilter::SheppLogan)
@@ -19,5 +21,7 @@ public:
 private:
     RampFilter filter;
 };
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_FELDKAMP_CPU_H

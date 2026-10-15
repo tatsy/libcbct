@@ -5,6 +5,8 @@
 #include "Common/Constants.h"
 #include "Reconstruction/FilterUtils.h"
 
+namespace libcbct::tests {
+
 TEST(FilterUtils, PaddedLengthIsSmallestPowerOfTwoAboveTwiceWidth) {
     for (size_t width : { 1, 100, 128, 300, 896 }) {
         const size_t n = paddedFFTLength(width);
@@ -64,3 +66,5 @@ TEST(FilterUtils, CosineWeightsAreSymmetricAndBounded) {
     const double u = (0.5 - 0.5 * w) * 0.5, v = (0.5 - 0.5 * h) * 0.5;
     EXPECT_NEAR(weights[0], 400.0 / std::sqrt(400.0 * 400.0 + u * u + v * v), 1e-6);
 }
+
+}  // namespace libcbct::tests

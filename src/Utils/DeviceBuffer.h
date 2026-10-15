@@ -11,6 +11,8 @@
 
 #include "CudaUtils.h"
 
+namespace libcbct {
+
 template <typename T>
 class DeviceBuffer {
 public:
@@ -45,5 +47,7 @@ private:
     T *ptr_ = nullptr;
     size_t size_ = 0;
 };
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_DEVICE_BUFFER_H

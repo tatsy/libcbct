@@ -5,7 +5,7 @@
 
 #include "Utils/VulkanCompute.h"
 
-using namespace libcbct;
+namespace libcbct::tests {
 
 namespace {
 
@@ -71,3 +71,5 @@ TEST_F(VulkanComputeTest, BatchRetainsBuffersAndDeviceAfterOriginalOwnersAreRele
 }
 
 }  // namespace
+
+}  // namespace libcbct::tests

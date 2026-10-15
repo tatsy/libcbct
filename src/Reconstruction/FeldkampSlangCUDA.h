@@ -1,25 +1,14 @@
 #pragma once
 
-#if defined(LIBCBCT_WITH_SLANG_CUDA)
+#if defined(LIBCBCT_WITH_CUDA)
 
-#include <filesystem>
-#include <utility>
+#include "FeldkampCUDA.h"
 
-#include "ReconstructionBase.h"
+namespace libcbct {
 
-// Execute precompiled Slang PTX with CUDA memory and cuFFT.
-class LIBCBCT_API FeldkampSlangCUDA : public ReconstructionBase {
-public:
-    explicit FeldkampSlangCUDA(std::filesystem::path kernelDirectory, RampFilter filter = RampFilter::SheppLogan)
-        : kernelDirectory_(std::move(kernelDirectory))
-        , filter_(filter) {
-    }
+// Source-compatible name retained for callers of the former PTX-specific class.
+using FeldkampSlangCUDA = FeldkampCUDA;
 
-    VolumeF32 reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const override;
+}  // namespace libcbct
 
-private:
-    std::filesystem::path kernelDirectory_;
-    RampFilter filter_;
-};
-
-#endif  // LIBCBCT_WITH_SLANG_CUDA
+#endif  // LIBCBCT_WITH_CUDA

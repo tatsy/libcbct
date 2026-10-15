@@ -16,14 +16,112 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j
 ```
 
+### VS Code and CMake presets
+
+Use CMake 3.24 or newer with the CMake Tools and C/C++ extensions in VS Code.
+Run `CMake: Select Configure Preset`, configure, and then select the matching
+build and test presets. Presets for other operating systems are hidden.
+
+| Configure preset | Backends | Build/test presets |
+| --- | --- | --- |
+| `msvc2022` | CPU | `Debug`, `Release`, `RelWithDebInfo`, `MinSizeRel` |
+| `msvc2022-cuda` | CPU + CUDA | `msvc2022-cuda-debug`, `msvc2022-cuda-release` |
+| `msvc2022-vulkan` | CPU + Vulkan | `msvc2022-vulkan-debug`, `msvc2022-vulkan-release` |
+| `msvc2022-cuda-vulkan` | CPU + CUDA + Vulkan | `msvc2022-cuda-vulkan-debug`, `msvc2022-cuda-vulkan-release` |
+| `macos-debug`, `macos-release` | CPU | Same as the configure preset |
+| `macos-vulkan-debug`, `macos-vulkan-release` | CPU + Vulkan | Same as the configure preset |
+
+Windows uses Visual Studio 2022 with x64. macOS uses Ninja and the system compiler;
+its OpenMP option defaults to `OFF` and can be enabled locally when available.
+All development presets enable tests. Slang is selected automatically for GPU
+backends. Vulkan on macOS also requires a loader and MoltenVK installation.
+
+Each configure preset uses `build/<preset-name>` for its cache and artifacts,
+so backend and build-type selections do not reuse incompatible caches. The
+old `build/CMakeCache.txt` is not reused by these presets.
+Windows build types share their configure preset's directory because Visual
+Studio supports multiple configurations in one build tree.
+
+For example, build and test the Windows CUDA backend with:
+
+```shell
+cmake --preset msvc2022-cuda
+cmake --build --preset msvc2022-cuda-release
+ctest --preset msvc2022-cuda-release
+```
+
+Use `macos-vulkan-release` for all three commands on macOS with Vulkan.
+Machine-specific dependency paths belong in the Git-ignored
+`CMakeUserPresets.json`. For example, adapt these OpenCV paths for a local
+Windows CPU build; `OpenCV_DIR` must contain `OpenCVConfig.cmake`:
+
+```json
+{
+  "version": 5,
+  "configurePresets": [
+    {
+      "name": "local-msvc2022",
+      "inherits": "msvc2022",
+      "cacheVariables": {
+        "OpenCV_DIR": "C:/path/to/opencv/cmake"
+      },
+      "environment": {
+        "PATH": "C:/path/to/opencv/bin;$penv{PATH}"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "local-release",
+      "inherits": "Release",
+      "configurePreset": "local-msvc2022"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "local-release",
+      "inherits": "Release",
+      "configurePreset": "local-msvc2022"
+    }
+  ]
+}
+```
+
+The Windows F5 launch configuration obtains the executable path from CMake Tools.
+Select `cbct_exe` as the launch target and a matching build preset before launching;
+F5 prompts for the input `config.json` path and runtime backend.
+See the [CMake Tools preset guide](https://github.com/microsoft/vscode-cmake-tools/blob/main/docs/cmake-presets.md)
+for the extension's configure, build, and test commands.
+
+### C++ API
+
+Library-owned C++ types, functions, and constants are defined in `libcbct`:
+
+```cpp
+#include <libcbct.h>
+
+namespace cbct = libcbct;
+
+cbct::VolumeF32 reconstruct(const cbct::VolumeF32 &sinogram, const cbct::Geometry &geometry) {
+    return cbct::FeldkampCPU(cbct::RampFilter::SheppLogan).reconstruct(sinogram, geometry);
+}
+```
+
+Namespace aliases are optional and belong in consumer code. Public headers do not
+introduce global aliases for the former unqualified names. Update existing callers
+to use qualified names (or local using declarations) and rebuild downstream C++
+binaries, since moving public types and functions changes their ABI.
+Macros retain their existing names; logging functions such as
+`libcbct::LIBCBCT_INFO` are ordinary namespaced C++ functions.
+
 ### Vulkan backend
 
 Enable Vulkan compute/reconstruction with `LIBCBCT_WITH_VULKAN` (disabled by
-default), and enable Slang to build its SPIR-V kernels:
+default). Slang is enabled automatically to build its SPIR-V kernels:
 
 ```shell
 cmake -S . -B build/vulkan -DCMAKE_BUILD_TYPE=Release \
-  -DLIBCBCT_WITH_VULKAN=ON -DLIBCBCT_WITH_SLANG=ON \
+  -DLIBCBCT_WITH_VULKAN=ON \
   -DLIBCBCT_WITH_CUDA=OFF -DLIBCBCT_BUILD_TESTS=ON
 cmake --build build/vulkan --config Release --parallel
 ctest --test-dir build/vulkan -C Release --output-on-failure
@@ -44,7 +142,7 @@ buffers, and fences. VMA supplies device and mapped staging allocations using th
 context's loader proc-address functions. No volk dependency is needed.
 To use an existing VMA checkout offline, set `FETCHCONTENT_SOURCE_DIR_VMA`.
 
-`FeldkampVulkan(kernelDirectory, filter, deviceIndex)` implements FDK using the
+`libcbct::FeldkampVulkan(kernelDirectory, filter, deviceIndex)` implements FDK using the
 shared Slang weighting, frequency filtering, and backprojection kernels. Additional
 Slang kernels perform a batched FP32 radix-2 FFT and crop the filtered projection.
 The FFT handles the power-of-two row lengths produced by `paddedFFTLength`; its
@@ -58,7 +156,7 @@ The runtime requires Vulkan 1.1 and support for 16 × 16 × 1 work groups. Gener
 SPIR-V targets version 1.3 and uses checked 32-bit storage-buffer indexing, so FDK
 does not require `shaderInt64` or FP32 atomic addition. One invocation owns each
 voxel during a projection. Optional atomic support is reported by
-`VulkanComputeContext::deviceInfo()`/`availableDevices()`; atomic extensions are
+`libcbct::VulkanComputeContext::deviceInfo()`/`availableDevices()`; atomic extensions are
 not enabled by this adapter. Oversized buffers/dispatches are rejected according
 to device limits, including `maxStorageBufferRange`. Large volumes require a
 future tiled implementation or another backend.
@@ -80,10 +178,10 @@ The host foundation is reusable independently of reconstruction:
 
 Batches retain their buffers, kernels, and device until execution completes.
 Submission is synchronous; do not change mapped input buffers while a batch is
-in flight. The Vulkan foundation and reconstruction can be built without Slang
-or CUDA: with Slang disabled, provide precompiled SPIR-V/reflection using
-`--spirv-dir`. With Vulkan disabled, no Vulkan SDK or VMA is required. The existing
-CPU, CUDA, and Slang PTX backends remain available, and `auto` retains its existing
+in flight. Building the Vulkan backend requires Slang, but does not require CUDA.
+At runtime, provide the generated SPIR-V/reflection files; Slang is not invoked.
+With Vulkan disabled, no Vulkan SDK or VMA is required. The existing
+CPU and CUDA backends remain available, and `auto` retains its existing
 CUDA/CPU selection behavior.
 
 Vulkan tests check staging transfers, resource lifetimes, FFT results against a
@@ -95,10 +193,12 @@ Windows/NVIDIA, with macOS/MoltenVK validation still pending.
 
 ### Slang compiler
 
-Enable Slang with `LIBCBCT_WITH_SLANG` (disabled by default):
+Slang is enabled automatically when `LIBCBCT_WITH_CUDA` or
+`LIBCBCT_WITH_VULKAN` is `ON`. `LIBCBCT_WITH_SLANG` is derived internally and is
+no longer a user-configurable option. For example, to build the CUDA backend:
 
 ```shell
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLIBCBCT_WITH_SLANG=ON
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLIBCBCT_WITH_CUDA=ON
 cmake --build build --config Release --parallel
 ```
 
@@ -110,13 +210,15 @@ command-line compiler (`slangc`). The `slang-glslang` support library and its
 glslang/SPIRV-Tools dependencies are included for SPIR-V optimization and
 validation. Git and network access are required on the first
 configure. Slang's tests, examples, graphics libraries, and LLVM-based CPU targets
-are disabled. Slang can be built without a CUDA toolkit; compiling kernels to PTX
-later requires CUDA's NVRTC library at runtime.
+are disabled. Vulkan-only builds do not need a CUDA toolkit; compiling kernels
+to PTX requires CUDA's NVRTC library during the build.
 
-With both `LIBCBCT_WITH_CUDA=ON` and `LIBCBCT_WITH_SLANG=ON`, the library also
-provides `FeldkampSlangCUDA` and builds the PTX artifacts needed for reconstruction.
-This combination requires NVRTC during the build. CPU-only and conventional CUDA
-builds remain available without Slang.
+`LIBCBCT_WITH_CUDA=ON` automatically enables `LIBCBCT_WITH_SLANG` and builds the
+PTX artifacts needed by `libcbct::FeldkampCUDA`. CUDA kernels are maintained in Slang;
+there are no handwritten `.cu` sources or CUDA-language compilation steps.
+The CUDA Toolkit, including NVRTC, is required to build this backend. CUDA Runtime,
+Driver API, and cuFFT remain its execution dependencies. CPU-only builds remain
+available without Slang or the CUDA Toolkit.
 
 ### Slang FDK kernels
 
@@ -128,9 +230,10 @@ builds remain available without Slang.
 | `applyFilterKernel` | Multiply both complex FFT components by the response | `ceil(nFreq / 16) × ceil(detHeight / 16) × 1` |
 | `backProjectionKernel` | Bilinear sampling and accumulation into the volume | `ceil(volSize.x / 16) × ceil(volSize.y / 16) × volSize.z` |
 
-With `LIBCBCT_WITH_SLANG=ON`, the default build generates CUDA source (`.cu`),
+With either GPU backend enabled, the default build generates diagnostic CUDA source (`.cu`),
 SPIR-V (`.spv`), and target-specific reflection (`.json`) for each entry point
-under `build/kernels/<configuration>/`. To build these artifacts explicitly:
+under `build/kernels/<configuration>/`. These `.cu` files are generated outputs,
+not maintained sources or inputs to an NVCC build. To build these artifacts explicitly:
 
 ```shell
 cmake --build build --config Release --target cbct_slang_kernels --parallel
@@ -158,16 +261,22 @@ host-side range checks and does not require Vulkan `shaderInt64`.
 The kernels retain voxel and detector pixel centers, half-pixel bilinear border
 extrapolation, and the `(SOD / L)^2` distance weight. Detector dimensions must be
 at least two for bilinear sampling. Keep the existing cuFFT pipeline and pass
-the response divided by `nPad`, as in `FeldkampCUDA::reconstruct`. Initialize the
+the response divided by `nPad`, as in `libcbct::FeldkampCUDA::reconstruct`. Initialize the
 volume before reconstruction, use `scale = pi / nProj`, and dispatch projection
 angles in order; volume accumulation is not atomic.
 
-`FeldkampSlangCUDA(kernelDirectory, filter)` loads the three PTX files once per
+`libcbct::FeldkampCUDA(kernelDirectory, filter)` loads the three PTX files once per
 reconstruction and executes them using CUDA's primary context. Device buffers,
 cuFFT plans, copies, and kernel launches share one CUDA stream; each projection
-completes before the next one. The original `FeldkampCUDA` remains available for
-comparison. Resources are released after queued work completes, including on
+completes before the next one. `libcbct::FeldkampCUDA(filter)` uses the kernel directory
+configured for the library build. Resources are released after queued work completes, including on
 exceptions.
+
+`libcbct::FeldkampSlangCUDA` remains a source-compatible alias of `libcbct::FeldkampCUDA`; both names
+execute the same implementation. Rebuild downstream C++ binaries against the
+updated headers/library. The handwritten CUDA implementation has been retired;
+its pre-retirement [numerical and performance comparison](docs/benchmarks/cuda-slang-transition.md)
+records the measured tradeoff on a small phantom.
 
 Supply each `<entry>.ptx` together with its matching `<entry>.ptx.json` reflection
 file. The host validates parameter sizes, field offsets (including geometry
@@ -180,8 +289,8 @@ With `LIBCBCT_BUILD_TESTS=ON`, `cbct_slang_kernel_tests` runs C++ code
 generated from the Slang source and compares it against the existing CPU helpers,
 including partial tiles, complex filtering, detector borders, and accumulation.
 It also checks host layouts against generated CUDA reflection without a GPU.
-CUDA builds register the PTX module tests; CUDA+Slang builds additionally compare
-full PTX reconstruction against CPU and conventional CUDA for both ramp filters,
+CUDA builds register PTX module tests and compare
+full reconstruction against CPU for both ramp filters,
 including a rectangular detector and partial tiles. GPU tests skip when no CUDA
 device is available.
 
@@ -195,18 +304,19 @@ Select a reconstruction backend with `--backend` (or `-b`):
 
 | Backend | Behavior |
 | --- | --- |
-| `auto` (default) | Conventional CUDA when built and a device is available; otherwise CPU |
+| `auto` (default) | CUDA/PTX when built and a device is available; otherwise CPU |
 | `cpu` | CPU reconstruction |
-| `cuda` | Original CUDA kernels and cuFFT; requires a CUDA build and device |
-| `slang-ptx` | Slang PTX kernels and cuFFT; requires a CUDA+Slang build and device |
+| `cuda` | Slang PTX kernels and cuFFT; requires a CUDA build and device |
+| `slang-ptx` | Compatibility alias for `cuda`, with identical PTX-directory handling |
+| `vulkan` | Slang SPIR-V kernels and GPU FFT; requires a Vulkan build and device |
 
 Explicitly requesting a backend that was not built produces an error. For example:
 
 ```shell
 cmake -S . -B build/gpu -DCMAKE_BUILD_TYPE=Release \
-  -DLIBCBCT_WITH_CUDA=ON -DLIBCBCT_WITH_SLANG=ON -DLIBCBCT_BUILD_TESTS=ON
+  -DLIBCBCT_WITH_CUDA=ON -DLIBCBCT_BUILD_TESTS=ON
 cmake --build build/gpu --config Release --parallel
-./build/gpu/bin/cbct_exe -c /path/to/data/config.json --backend slang-ptx \
+./build/gpu/bin/cbct_exe -c /path/to/data/config.json --backend cuda \
   --ptx-dir ./build/gpu/kernels/Release
 ctest --test-dir build/gpu -C Release --output-on-failure
 ```

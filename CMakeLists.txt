@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 project(LibCBCT LANGUAGES CXX)
 
-include(CheckLanguage)
 include(FetchContent)
 set(FETCHCONTENT_QUIET ON)
 
@@ -10,11 +9,18 @@ set(FETCHCONTENT_QUIET ON)
 # ===============================================
 option(LIBCBCT_WITH_CUDA "Build with CUDA support" OFF)
 option(LIBCBCT_WITH_VULKAN "Build with Vulkan compute and reconstruction support" OFF)
-option(LIBCBCT_WITH_SLANG "Enable the Slang compiler and compiler API" OFF)
 option(LIBCBCT_WITH_OPENMP "Build with OpenMP support" OFF)
 option(LIBCBCT_BUILD_TESTS "Build tests" OFF)
 option(LIBCBCT_BUILD_STATIC_LIBS "Build static libraries rather than shared libraries" OFF)
 option(LIBCBCT_BUILD_OPENCV_FROM_SOURCE "Build OpenCV from source" OFF)
+
+# Slang is a dependency of either GPU backend, not an independent build option.
+# Remove the former option from existing build trees before deriving its value.
+unset(LIBCBCT_WITH_SLANG CACHE)
+set(LIBCBCT_WITH_SLANG OFF)
+if (LIBCBCT_WITH_CUDA OR LIBCBCT_WITH_VULKAN)
+  set(LIBCBCT_WITH_SLANG ON)
+endif()
 
 # ===============================================
 # Global build targets
@@ -31,7 +37,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if (MSVC)
   add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/utf-8>")
-  add_compile_options("$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/utf-8>")
 endif()
 
 # ===============================================
@@ -46,29 +51,14 @@ endif()
 # CUDA
 # ===============================================
 if (LIBCBCT_WITH_CUDA)
-  check_language(CUDA)
-  if (CMAKE_CUDA_COMPILER)
-    if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-      set(CMAKE_CUDA_ARCHITECTURES "native")
-    endif()
-
-    enable_language(CUDA)
-    find_package(CUDAToolkit REQUIRED)
-    set(CMAKE_CUDA_STANDARD 17)
-    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-
-    message(STATUS "Build LibCBCT with CUDA!")
-    get_target_property(LIBCBCT_CUFFT_LIBRARY CUDA::cufft IMPORTED_LOCATION)
-
-    message(STATUS "Building with CUDA support")
-    message(STATUS "  CUDA compiler: ${CMAKE_CUDA_COMPILER} (${CMAKE_CUDA_COMPILER_ID})")
-    message(STATUS "  CUDA toolkit version: ${CUDAToolkit_VERSION}")
-    message(STATUS "  CUDA architectures: ${CMAKE_CUDA_ARCHITECTURES}")
-    message(STATUS "  cuFFT: ${LIBCBCT_CUFFT_LIBRARY}")
-  else()
-    message(WARNING "No CUDA compiler found. Building the CPU version only!")
-    set(LIBCBCT_WITH_CUDA OFF)
+  find_package(CUDAToolkit REQUIRED)
+  if (NOT TARGET CUDA::nvrtc)
+    message(FATAL_ERROR "The CUDA backend requires NVRTC to compile Slang kernels to PTX")
   endif()
+  get_target_property(LIBCBCT_CUFFT_LIBRARY CUDA::cufft IMPORTED_LOCATION)
+  message(STATUS "Building CUDA backend with Slang PTX")
+  message(STATUS "  CUDA toolkit version: ${CUDAToolkit_VERSION}")
+  message(STATUS "  cuFFT: ${LIBCBCT_CUFFT_LIBRARY}")
 endif()
 
 
@@ -226,11 +216,20 @@ else()
   set(BUILD_LIST "core;imgproc;imgcodecs;highgui" CACHE INTERNAL "")
   set(BUILD_TESTS OFF CACHE INTERNAL "")
   set(BUILD_EXAMPLES OFF CACHE INTERNAL "")
-  set(BUILD_PERF_TEST OFF CACHE INTERNAL "")
+  set(BUILD_PERF_TESTS OFF CACHE INTERNAL "")
   set(BUILD_JAVA OFF CACHE INTERNAL "")
-  set(BUILD_PYTHON_BINDINGS OFF CACHE INTERNAL "")
+  set(BUILD_opencv2_python2 OFF CACHE INTERNAL "")
+  set(BUILD_opencv2_python3 OFF CACHE INTERNAL "")
+  set(BUILD_opencv_apps OFF CACHE INTERNAL "")
   set(WITH_IPP OFF CACHE INTERNAL "")
   set(WITH_VTK OFF CACHE INTERNAL "")
+  set(WITH_OPENCL OFF CACHE INTERNAL "")
+  set(WITH_FFMPEG OFF CACHE INTERNAL "")
+  set(WITH_GSTREAMER OFF CACHE INTERNAL "")
+  set(WITH_MSMF OFF CACHE INTERNAL "")          # Windows
+  set(WITH_DSHOW OFF CACHE INTERNAL "")         # Windows
+  set(WITH_V4L OFF CACHE INTERNAL "")           # Linux
+  set(WITH_AVFOUNDATION OFF CACHE INTERNAL "")  # macOS
 
   FetchContent_MakeAvailable(opencv)
   set(OpenCV_INCLUDE_DIRS
@@ -247,7 +246,6 @@ endif()
 # Tests
 # ===============================================
 if (LIBCBCT_BUILD_TESTS)
-
   FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest

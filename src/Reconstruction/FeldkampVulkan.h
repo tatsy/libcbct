@@ -7,6 +7,8 @@
 
 #include "ReconstructionBase.h"
 
+namespace libcbct {
+
 // FDK using shared Slang SPIR-V and a Vulkan radix-2 FFT.
 class LIBCBCT_API FeldkampVulkan : public ReconstructionBase {
 public:
@@ -24,5 +26,7 @@ private:
     RampFilter filter_;
     int deviceIndex_;
 };
+
+}  // namespace libcbct
 
 #endif

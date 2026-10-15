@@ -7,6 +7,8 @@
 
 #include "SettingsImporterBase.h"
 
+namespace libcbct {
+
 /**
  * @brief Setting file importer with JSON format
  */
@@ -17,5 +19,7 @@ public:
 
     void read(const std::string &filename);
 };
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_JSON_SETTING_IMPORTER_H

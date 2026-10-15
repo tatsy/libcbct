@@ -9,6 +9,8 @@
 #include "Utils/Volume.h"
 #include "Geometry/GeometryBase.h"
 
+namespace libcbct {
+
 enum class RampFilter : int {
     RamLak,
     SheppLogan,
@@ -25,5 +27,7 @@ public:
 
 protected:
 };
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_RECONSTRUCTION_BASE_H

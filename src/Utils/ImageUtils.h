@@ -9,6 +9,8 @@
 
 #include "Common/Api.h"
 
+namespace libcbct {
+
 LIBCBCT_HOST_DEVICE int clampi(int v, int lo, int hi) {
     return v < lo ? lo : (v > hi ? hi : v);
 }
@@ -33,5 +35,7 @@ LIBCBCT_HOST_DEVICE float bilerp(const float *const image, int width, int height
 
     return fmaf(v, (v1 - v0), v0);
 }
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_IMAGE_UTILS_H

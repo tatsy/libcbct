@@ -14,6 +14,8 @@
 #define SLANG_PRELUDE_NAMESPACE libcbct_slang_cpu
 #include "FeldkampKernels.cpu.cpp"
 
+namespace libcbct::tests {
+
 namespace {
 
 namespace generated = libcbct_slang_cpu;
@@ -152,3 +154,5 @@ TEST(SlangKernels, BackProjectionMatchesCPUAtBordersAndAcrossProjections) {
     EXPECT_GT(horizontalBorder, 0u);
     EXPECT_GT(verticalBorder, 0u);
 }
+
+}  // namespace libcbct::tests

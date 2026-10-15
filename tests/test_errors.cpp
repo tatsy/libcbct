@@ -6,6 +6,8 @@
 #include "IO/ImageSequenceImporter.h"
 #include "Settings/JsonSettingImporter.h"
 
+namespace libcbct::tests {
+
 namespace fs = std::filesystem;
 
 TEST(Errors, MissingProjectionFolderThrowsIOError) {
@@ -25,3 +27,5 @@ TEST(Errors, MissingConfigFileThrowsIOError) {
     JsonSettingImporter config;
     EXPECT_THROW(config.read("this/file/does/not/exist.json"), libcbct::IOError);
 }
+
+}  // namespace libcbct::tests

@@ -1,7 +1,8 @@
-#include "FeldkampSlangCUDA.h"
+#include "FeldkampCUDA.h"
 
 #include <cmath>
 #include <limits>
+#include <utility>
 #include <vector>
 
 #include "Common/Constants.h"
@@ -10,6 +11,8 @@
 #include "Reconstruction/Slang/FdkCudaParameters.h"
 #include "Utils/CudaPtxModule.h"
 #include "Utils/DeviceBuffer.h"
+
+namespace libcbct {
 
 namespace {
 
@@ -73,7 +76,16 @@ void launch(const libcbct::CudaPtxKernel &kernel, dim3 grid, Parameters &params,
 
 }  // namespace
 
-VolumeF32 FeldkampSlangCUDA::reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const {
+FeldkampCUDA::FeldkampCUDA(RampFilter filter)
+    : FeldkampCUDA(std::filesystem::path(LIBCBCT_SLANG_KERNEL_DIR), filter) {
+}
+
+FeldkampCUDA::FeldkampCUDA(std::filesystem::path kernelDirectory, RampFilter filter)
+    : kernelDirectory_(std::move(kernelDirectory))
+    , filter_(filter) {
+}
+
+VolumeF32 FeldkampCUDA::reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const {
     using namespace libcbct::detail;
     const std::size_t detWidth = sinogram.size<0>();
     const std::size_t detHeight = sinogram.size<1>();
@@ -170,3 +182,5 @@ VolumeF32 FeldkampSlangCUDA::reconstruct(const VolumeF32 &sinogram, const Geomet
     CUDA_CHECK(cudaStreamSynchronize(stream.value));
     return tomogram;
 }
+
+}  // namespace libcbct
