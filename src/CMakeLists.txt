@@ -45,10 +45,14 @@ if (LIBCBCT_WITH_CUDA AND LIBCBCT_WITH_SLANG)
 endif()
 
 if (LIBCBCT_WITH_VULKAN)
+  list(APPEND LIBCBCT_HEADERS Utils/VulkanCompute.h Utils/SlangSpirvKernel.h Utils/VulkanFft.h
+    Reconstruction/FeldkampVulkan.h)
+  list(APPEND LIBCBCT_SOURCES Utils/VulkanCompute.cpp Utils/SlangSpirvKernel.cpp Utils/VulkanFft.cpp
+    Reconstruction/FeldkampVulkan.cpp)
   # Compile VMA in one translation unit, reusable by the library and Vulkan tests.
   add_library(cbct_vma STATIC Utils/VulkanMemoryAllocator.cpp)
   target_link_libraries(cbct_vma PUBLIC Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
-  # The future device context supplies its loader's proc-address functions to VMA.
+  # The compute context supplies its loader's proc-address functions to VMA.
   target_compile_definitions(cbct_vma PUBLIC
     VMA_STATIC_VULKAN_FUNCTIONS=0 VMA_DYNAMIC_VULKAN_FUNCTIONS=1)
   source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES Utils/VulkanMemoryAllocator.cpp)
@@ -95,6 +99,9 @@ endif()
 if (LIBCBCT_WITH_VULKAN)
   target_compile_definitions(${LIBCBCT} PUBLIC LIBCBCT_WITH_VULKAN)
   target_link_libraries(${LIBCBCT} PRIVATE cbct_vma)
+  if (LIBCBCT_WITH_SLANG)
+    add_dependencies(${LIBCBCT} cbct_slang_vulkan_kernels)
+  endif()
 endif()
 
 # ===============================================
@@ -109,7 +116,7 @@ target_include_directories(${LIBCBCT_EXE} PRIVATE
 
 target_link_libraries(${LIBCBCT_EXE} PRIVATE ${LIBCBCT} opencv_core opencv_highgui)
 
-if (LIBCBCT_WITH_CUDA AND LIBCBCT_WITH_SLANG)
+if (LIBCBCT_WITH_SLANG AND (LIBCBCT_WITH_CUDA OR LIBCBCT_WITH_VULKAN))
   target_compile_definitions(${LIBCBCT_EXE} PRIVATE
     LIBCBCT_SLANG_KERNEL_DIR="${LIBCBCT_SLANG_KERNEL_OUTPUT_DIR}")
 endif()

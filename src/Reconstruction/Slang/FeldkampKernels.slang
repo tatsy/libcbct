@@ -114,9 +114,15 @@ void backProjectionKernel(uint3 threadID : SV_DispatchThreadID, uniform BackProj
     if (uvw.x >= 0.0f && uvw.y >= 0.0f && uvw.x < params.detWidth && uvw.y < params.detHeight) {
         float value = bilinearSample(params.filtered, params.detWidth, params.detHeight,
                                      uvw.x - 0.5f, uvw.y - 0.5f);
+        // Vulkan storage-buffer ranges are checked by the host before dispatch.
+#if defined(LIBCBCT_VULKAN_32BIT_INDEXING)
+        uint index = (uint(voxel.z) * uint(params.geometry.volSize.y) + uint(voxel.y)) *
+                     uint(params.geometry.volSize.x) + uint(voxel.x);
+#else
         // Preserve CUDA's size_t arithmetic for large volumes.
         uint64_t index = (uint64_t(voxel.z) * uint64_t(params.geometry.volSize.y) + uint64_t(voxel.y)) *
                          uint64_t(params.geometry.volSize.x) + uint64_t(voxel.x);
+#endif
         params.volume[index] += value * uvw.z * params.scale;
     }
 }

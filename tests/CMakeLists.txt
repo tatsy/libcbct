@@ -24,9 +24,14 @@ endif()
 gtest_discover_tests(cbct_tests DISCOVERY_MODE PRE_TEST)
 
 if (LIBCBCT_WITH_VULKAN)
-  add_executable(cbct_vulkan_tests test_vulkan.cpp)
-  target_link_libraries(cbct_vulkan_tests PRIVATE cbct_vma GTest::gtest_main)
+  add_executable(cbct_vulkan_tests test_vulkan.cpp test_vulkan_compute.cpp)
+  target_link_libraries(cbct_vulkan_tests PRIVATE ${LIBCBCT} cbct_vma GTest::gtest_main)
   gtest_discover_tests(cbct_vulkan_tests DISCOVERY_MODE PRE_TEST)
+  if (LIBCBCT_WITH_SLANG)
+    target_sources(cbct_tests PRIVATE test_fdk_vulkan.cpp)
+    target_compile_definitions(cbct_tests PRIVATE
+      LIBCBCT_SLANG_KERNEL_DIR="${LIBCBCT_SLANG_KERNEL_OUTPUT_DIR}")
+  endif()
 endif()
 
 if (LIBCBCT_WITH_SLANG)

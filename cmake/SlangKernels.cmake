@@ -13,7 +13,7 @@ foreach(entry weightAndPadKernel applyFilterKernel backProjectionKernel)
       set(extension cu)
     elseif (target STREQUAL "spirv")
       set(extension spv)
-      set(profile_options -profile spirv_1_5)
+      set(profile_options -profile spirv_1_3 -D LIBCBCT_VULKAN_32BIT_INDEXING=1)
     else()
       set(extension ptx)
       set(downstream_options ${LIBCBCT_SLANG_PTX_OPTIONS})
@@ -44,6 +44,27 @@ add_custom_target(cbct_slang_kernels ALL DEPENDS ${libcbct_slang_outputs}
                   SOURCES "${LIBCBCT_SLANG_KERNEL_SOURCE}")
 # NVRTC is optional: PTX generation is requested explicitly on CUDA-equipped hosts.
 add_custom_target(cbct_slang_ptx DEPENDS ${libcbct_slang_ptx_outputs})
+
+if (LIBCBCT_WITH_VULKAN)
+  set(libcbct_slang_vulkan_outputs)
+  foreach(entry fftPrepareRealKernel fftPrepareComplexKernel fftStageKernel cropFilteredKernel)
+    set(output "${LIBCBCT_SLANG_KERNEL_OUTPUT_DIR}/${entry}.spv")
+    set(reflection "${LIBCBCT_SLANG_KERNEL_OUTPUT_DIR}/${entry}.spirv.json")
+    add_custom_command(
+      OUTPUT "${output}" "${reflection}"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${LIBCBCT_SLANG_KERNEL_OUTPUT_DIR}"
+      COMMAND $<TARGET_FILE:slangc> "${PROJECT_SOURCE_DIR}/src/Reconstruction/Slang/FftKernels.slang"
+              -entry ${entry} -target spirv -profile spirv_1_3 -floating-point-mode precise
+              -o "${output}" -reflection-json "${reflection}"
+      DEPENDS slangc "${PROJECT_SOURCE_DIR}/src/Reconstruction/Slang/FftKernels.slang"
+      COMMENT "Compiling ${entry} to SPIR-V"
+      VERBATIM
+    )
+    list(APPEND libcbct_slang_vulkan_outputs "${output}" "${reflection}")
+  endforeach()
+  add_custom_target(cbct_slang_vulkan_kernels DEPENDS ${libcbct_slang_vulkan_outputs})
+  add_dependencies(cbct_slang_vulkan_kernels cbct_slang_kernels)
+endif()
 
 if (LIBCBCT_BUILD_TESTS)
   set(LIBCBCT_SLANG_CPU_SOURCE "${LIBCBCT_SLANG_KERNEL_OUTPUT_DIR}/FeldkampKernels.cpu.cpp")

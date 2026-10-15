@@ -25,6 +25,10 @@
 #include "Reconstruction/FeldkampCUDA.h"
 #endif  // LIBCBCT_WITH_CUDA
 
+#if defined(LIBCBCT_WITH_VULKAN)
+#include "Reconstruction/FeldkampVulkan.h"
+#endif
+
 #if defined(LIBCBCT_WITH_SLANG_CUDA)
 #include "Reconstruction/FeldkampSlangCUDA.h"
 #endif

@@ -29,7 +29,7 @@ int run(int argc, char **argv) {
     options.add_options()("h,help", "Print help");
     options.add_options()("c,config", "Input configuration file", cxxopts::value<std::string>());
     options.add_options()("s,size", "Reconstruction volume size (cubic)", cxxopts::value<int>()->default_value("512"));
-    options.add_options()("b,backend", "Reconstruction backend: auto, cpu, cuda, slang-ptx",
+    options.add_options()("b,backend", "Reconstruction backend: auto, cpu, cuda, slang-ptx, vulkan",
                           cxxopts::value<std::string>()->default_value("auto"));
 #if defined(LIBCBCT_WITH_SLANG_CUDA)
     const std::string defaultPtxDirectory = LIBCBCT_SLANG_KERNEL_DIR;
@@ -38,6 +38,16 @@ int run(int argc, char **argv) {
 #endif
     options.add_options()("ptx-dir", "Directory containing FDK PTX and reflection files",
                           cxxopts::value<std::string>()->default_value(defaultPtxDirectory));
+#if defined(LIBCBCT_WITH_VULKAN) && defined(LIBCBCT_SLANG_KERNEL_DIR)
+    const std::string defaultSpirvDirectory = LIBCBCT_SLANG_KERNEL_DIR;
+#else
+    const std::string defaultSpirvDirectory;
+#endif
+    options.add_options()("spirv-dir", "Directory containing FDK/FFT SPIR-V and reflection files",
+                          cxxopts::value<std::string>()->default_value(defaultSpirvDirectory));
+    options.add_options()("vulkan-device", "Vulkan physical device index (-1 selects automatically)",
+                          cxxopts::value<int>()->default_value("-1"));
+    options.add_options()("no-preview", "Save the reconstructed volume without opening a preview window");
     const auto configs = options.parse(argc, argv);
 
     if (configs.count("help")) {
@@ -69,8 +79,15 @@ int run(int argc, char **argv) {
         throw libcbct::InvalidArgument(
             "Slang PTX backend is unavailable; rebuild with LIBCBCT_WITH_CUDA=ON and LIBCBCT_WITH_SLANG=ON");
 #endif
+    } else if (backend == "vulkan") {
+#if defined(LIBCBCT_WITH_VULKAN)
+        fdk = std::make_unique<FeldkampVulkan>(configs["spirv-dir"].as<std::string>(),
+            RampFilter::SheppLogan, configs["vulkan-device"].as<int>());
+#else
+        throw libcbct::InvalidArgument("Vulkan backend is unavailable; rebuild with LIBCBCT_WITH_VULKAN=ON");
+#endif
     } else {
-        throw libcbct::InvalidArgument("Unknown backend '" + backend + "'; choose auto, cpu, cuda, or slang-ptx");
+        throw libcbct::InvalidArgument("Unknown backend '" + backend + "'; choose auto, cpu, cuda, slang-ptx, or vulkan");
     }
     const int volSize = configs["size"].as<int>();
     if (volSize <= 0) throw libcbct::InvalidArgument("Reconstruction size must be positive");
@@ -80,7 +97,7 @@ int run(int argc, char **argv) {
     }
     LIBCBCT_INFO("Reconstruction backend: %s", backend.c_str());
     LIBCBCT_INFO("OpenMP threads: %d", omp_get_max_threads());
-    if (backend != "cpu") showCudaInfo();
+    if (backend == "cuda" || backend == "slang-ptx") showCudaInfo();
 
     // Read device parameters
     fs::path configPath(configs["config"].as<std::string>());
@@ -145,6 +162,7 @@ int run(int argc, char **argv) {
     LIBCBCT_DEBUG("Reconstructed volume saved: %s", outputPath.string().c_str());
 
     // Preview
+    if (configs.count("no-preview")) return 0;
     cv::namedWindow("volume", cv::WINDOW_AUTOSIZE);
     cv::createTrackbar("#slice", "volume", nullptr, volSize - 1, onTrackbar, &tomogram);
     onTrackbar(volSize / 2, &tomogram);
