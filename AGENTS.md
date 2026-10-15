@@ -30,3 +30,35 @@
   - Validate numerical results, performance, and platform compatibility (including macOS via MoltenVK) against the existing backends.
 - Keep reconstruction algorithms separate from backend-specific execution and resource management, and share Slang kernels between backends where practical.
 - Make GPU backends optional at build time so that CPU-only builds and tests remain available.
+
+## Operator-Based Reconstruction Architecture
+
+- Migrate toward reconstruction algorithms that compose reusable operators. A new reconstruction method should reuse existing operators without requiring a separate implementation of the entire method for every backend.
+- Separate responsibilities into reconstruction recipes, operator implementations, and execution/resource management.
+  - Reconstruction recipes define operation ordering and algorithm parameters; keep backend-specific branches, kernel launches, FFT library calls, memory allocation, transfers, and synchronization out of these recipes.
+  - Give operators explicit, typed input/output contracts, including shapes, axis order, numerical types, geometry, normalization, and overwrite versus accumulation semantics.
+  - Initially extract weighting with zero padding, projection filtering, and FDK backprojection. Keep FFT, spectral multiplication, and cropping as reusable components within projection filtering; preserve existing fused kernels where practical.
+  - Preserve pixel-center conventions, interpolation and boundary behavior, FFT normalization, projection angles, and accumulation order across implementations. Backend-native FFT representations may differ internally while exposing the same mathematical results.
+  - Name FDK-specific backprojection accordingly. Do not assume that its distance-weighted operation is a general adjoint projector; iterative methods may require a separately defined forward/adjoint pair.
+
+### Backend Selection and Data Movement
+
+- Select implementations per operator, with an overall backend setting supplying defaults and operator-specific settings providing overrides.
+- Treat CPU, CUDA, and Vulkan as execution/resource backends. Treat native CUDA and Slang PTX as CUDA operator implementation choices that can share CUDA memory and execution resources.
+- Use backend-neutral buffer/view interfaces carrying shape, type, layout, and device/context ownership. Keep raw CUDA and Vulkan handles inside backend adapters.
+- Centralize allocation, transfers, synchronization, workspace reuse, FFT plans, and kernel/pipeline lifetimes in execution sessions and backend services.
+  - Keep consecutive operations on the same device resident in device memory and reuse their stream or command batch. Avoid adding a transfer or host wait at every operator boundary.
+  - Support mixed-backend pipelines by inserting required transfers and synchronization at backend boundaries. Initially use host staging for CUDA-Vulkan transfers; direct interop is a later optimization.
+  - Keep the reconstruction volume on the backprojection backend throughout the FDK projection loop. Transfer filtered projections when necessary rather than moving the volume for every projection.
+  - Reuse immutable weights and filter coefficients. Define ownership and update rules so that stale copies of mutable buffers cannot be reused.
+  - Validate operator availability, context compatibility, device limits, and required features before execution. Report explicitly requested unsupported configurations clearly; fallback behavior must follow a defined selection policy.
+- Keep Slang CUDA/PTX and SPIR-V parameter packing and reflection handling inside their respective adapters. Reconstruction recipes must not depend on shader ABI layouts.
+
+### Incremental Migration and Validation
+
+- First define operator contracts and minimal common buffer/execution interfaces, extract CPU operators, and implement one shared FDK recipe.
+- Then adapt existing CUDA, Slang PTX, and Vulkan implementations to the operator interfaces, followed by mixed-backend execution and per-operator command-line selection.
+- Preserve existing reconstruction classes and their public APIs during migration. Convert them to thin configuration wrappers around the shared recipe after correctness and performance have been verified.
+- Keep existing implementations as comparison references until their replacements are validated. Test individual operators, complete reconstruction, and mixed-backend combinations, including FFT normalization, interpolation boundaries, partial tiles, and accumulation.
+- Preserve the existing FDK comparison target of maximum absolute error below `1e-6` on the established fixtures; choose additional operator tolerances according to their numerical behavior.
+- Compare execution time, transfer volume, and allocation counts to detect regressions. Keep CPU-only builds and optional-backend configurations working throughout migration.
