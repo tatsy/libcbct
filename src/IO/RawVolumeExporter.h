@@ -9,6 +9,7 @@
 #include <fstream>
 
 #include "BaseExporter.h"
+#include "Utils/Normalization.h"
 
 namespace libcbct {
 
@@ -24,6 +25,8 @@ private:
     template <typename T>
     void writeAsType(const std::string &filename, const VolumeF32 &tomogram, bool normalize = false,
                      float outMin = 0.0f, float outMax = 1.0f) const {
+        // Validate normalized output before opening/truncating the destination file.
+        const auto [minVal, maxVal] = normalize ? detail::finiteMinMax(tomogram) : std::pair{ 0.0f, 0.0f };
         std::ofstream writer(filename.c_str(), std::ios::out | std::ios::binary);
         if (writer.fail()) {
             LIBCBCT_ERROR("Failed to open file: %s", filename.c_str());
@@ -32,7 +35,6 @@ private:
         const int sizeX = tomogram.size<0>();
         const int sizeY = tomogram.size<1>();
         const int sizeZ = tomogram.size<2>();
-        const auto [minVal, maxVal] = tomogram.getMinMax();
 
         auto buffer = std::make_unique<T[]>(sizeX * sizeY);
         for (int z = 0; z < sizeZ; z++) {
@@ -40,8 +42,16 @@ private:
                 for (int x = 0; x < sizeX; x++) {
                     float value = tomogram(x, y, z);
                     if (normalize) {
-                        value = (value - minVal) / (maxVal - minVal);
-                        value = outMin + value * (outMax - outMin);
+                        if (maxVal == minVal) {
+                            value = outMin;
+                        } else {
+                            const float range = maxVal - minVal;
+                            // Preserve the existing FP32 formula unless its range overflows.
+                            value = std::isfinite(range) ? (value - minVal) / range
+                                : static_cast<float>((static_cast<double>(value) - minVal)
+                                                     / (static_cast<double>(maxVal) - minVal));
+                            value = outMin + value * (outMax - outMin);
+                        }
                     }
                     const T outValue = static_cast<T>(value);
                     buffer[y * sizeX + x] = outValue;

@@ -38,5 +38,6 @@
 
 #include "Utils/Vec.h"
 #include "Utils/Volume.h"
+#include "Utils/Normalization.h"
 
 #endif  // LIBCBCT_H

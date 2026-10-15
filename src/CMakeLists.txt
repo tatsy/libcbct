@@ -22,6 +22,7 @@ set(LIBCBCT_HEADERS
   Settings/SettingsImporterBase.h
   Utils/CudaUtils.h
   Utils/ImageUtils.h
+  Utils/Normalization.h
   Utils/Vec.h
   Utils/Volume.h
 )

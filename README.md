@@ -346,9 +346,26 @@ The library executes precompiled PTX and does not invoke Slang or NVRTC at runti
   "DetWidth": 896,
   "DetHeight": 896,
   "NumberOfProj": 1000,
+  "HasDuplicateEndpoint": true,
   "Clockwise": true
 }
 ```
+
+`NumberOfProj` is the effective number of uniformly spaced projections over a full
+turn. Filenames are sorted lexicographically, so use zero-padded indices. With
+`HasDuplicateEndpoint: false` (the default), exactly `NumberOfProj` TIFF files are
+required. If the acquisition includes a final frame at 360 degrees repeating the
+first frame, set `HasDuplicateEndpoint: true`: exactly `NumberOfProj + 1` files are
+required and the last file is excluded. For example, 180 effective projections
+require 180 files without an endpoint or 181 files with an endpoint. Counts are
+checked strictly; an extra file is never discarded automatically.
+
+The first file defines the reference angle zero. `Clockwise` describes acquisition
+order and defaults to `true`. Clockwise files are reordered as `[0, N-1, ..., 1]`
+after dropping the endpoint, preserving the first frame. All backends receive the
+same `N` frames at angles `2*pi*i/N`. If migrating an existing configuration that
+previously supplied `NumberOfProj + 1` images, explicitly set
+`HasDuplicateEndpoint: true` only when the last frame repeats the starting angle.
 
 ## License
 

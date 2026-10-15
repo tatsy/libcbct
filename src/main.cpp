@@ -123,6 +123,7 @@ int run(int argc, char **argv) {
     const int detHeight = config.getInt("DetHeight");
     const int numberOfProj = config.getInt("NumberOfProj");
     const bool clockwise = config.getBool("Clockwise", true);
+    const bool hasDuplicateEndpoint = config.getBool("HasDuplicateEndpoint", false);
     const float freeRay = 65535.0f;  // Assuming 16-bit images
     cbct::LIBCBCT_DEBUG("SOD: %f mm", sod);
     cbct::LIBCBCT_DEBUG("SDD: %f mm", sdd);
@@ -134,13 +135,14 @@ int run(int argc, char **argv) {
         cbct::LIBCBCT_THROW<libcbct::IOError>("Projection folder does not exist: %s", imagePath.string().c_str());
     }
 
-    cbct::VolumeF32 sinogram = cbct::ImageSequenceImporter(imagePath.string(), ".tif", clockwise).read();
-    sinogram.forEach([freeRay](float v) -> float { return -std::log((v + 1.0f) / freeRay); });
+    const cbct::ProjectionSequenceOptions projectionOptions{ numberOfProj, clockwise, hasDuplicateEndpoint };
+    cbct::VolumeF32 sinogram = cbct::ImageSequenceImporter(imagePath.string(), ".tif", projectionOptions).read();
 
-    if (sinogram.size<0>() != detWidth || sinogram.size<1>() != detHeight || sinogram.size<2>() - 1 != numberOfProj) {
+    if (sinogram.size<0>() != detWidth || sinogram.size<1>() != detHeight || sinogram.size<2>() != numberOfProj) {
         cbct::LIBCBCT_ERROR("Sinogram size mismatch! Expected: (%d, %d, %d), Actual: (%zu, %zu, %zu)", detWidth,
                             detHeight, numberOfProj, sinogram.size<0>(), sinogram.size<1>(), sinogram.size<2>());
     }
+    sinogram.forEach([freeRay](float v) -> float { return -std::log((v + 1.0f) / freeRay); });
 
     cbct::LIBCBCT_DEBUG("Detector size: (%d, %d)", detWidth, detHeight);
     cbct::LIBCBCT_DEBUG("Sinogram: %dx%dx%d", detWidth, detHeight, numberOfProj);
@@ -160,7 +162,7 @@ int run(int argc, char **argv) {
     std::tie(minVal, maxVal) = tomogram.getMinMax();
     cbct::LIBCBCT_DEBUG("min=%f, max=%f", minVal, maxVal);
 
-    tomogram.forEach([minVal, maxVal](float x) { return std::max(0.0f, x) / maxVal; });
+    cbct::normalizePositiveMaximum(tomogram);
 
     // Export tomogram
     const fs::path outputPath =

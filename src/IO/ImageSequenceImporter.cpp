@@ -4,6 +4,7 @@
 #include <vector>
 #include <atomic>
 #include <filesystem>
+#include <limits>
 
 #include <opencv2/opencv.hpp>
 
@@ -17,6 +18,9 @@ namespace libcbct {
 namespace fs = std::filesystem;
 
 VolumeF32 ImageSequenceImporter::read() const {
+    if (projections && projections->numberOfProjections <= 0) {
+        throw InvalidArgument("NumberOfProj must be positive");
+    }
     // Get image file list
     std::vector<std::string> fileList;
     const fs::path folderPath(folder.c_str());
@@ -40,6 +44,24 @@ VolumeF32 ImageSequenceImporter::read() const {
     }
 
     std::sort(fileList.begin(), fileList.end());
+
+    if (projections) {
+        const size_t effectiveCount = static_cast<size_t>(projections->numberOfProjections);
+        const size_t expectedCount = effectiveCount + (projections->hasDuplicateEndpoint ? 1u : 0u);
+        if (fileList.size() != expectedCount) {
+            LIBCBCT_THROW<InvalidArgument>(
+                "Projection count mismatch: NumberOfProj=%d, HasDuplicateEndpoint=%s; expected %zu files, found %zu",
+                projections->numberOfProjections, projections->hasDuplicateEndpoint ? "true" : "false",
+                expectedCount, fileList.size());
+        }
+        // Discard the terminal angle-zero duplicate before reversing the acquisition direction.
+        if (projections->hasDuplicateEndpoint) fileList.pop_back();
+        // Keep the reference frame: [0, -d, -2d, ...] becomes [0, d, 2d, ...].
+        if (projections->clockwise) std::reverse(fileList.begin() + 1, fileList.end());
+    }
+    if (fileList.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+        throw InvalidArgument("Too many projection images");
+    }
 
     // Get image size
     cv::Mat firstImage = cv::imread(fileList[0], cv::IMREAD_UNCHANGED);

@@ -5,11 +5,14 @@ add_executable(cbct_tests
   test_geometry.cpp
   test_namespace.cpp
   test_volume.cpp
+  test_normalization.cpp
+  test_progress.cpp
+  test_projection_sequence.cpp
   test_fdk.cpp
   test_errors.cpp)
 
-target_include_directories(cbct_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(cbct_tests PRIVATE ${LIBCBCT} GTest::gtest_main)
+target_include_directories(cbct_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(cbct_tests PRIVATE ${LIBCBCT} GTest::gtest_main opencv_core opencv_imgcodecs)
 
 if (LIBCBCT_WITH_CUDA)
   target_sources(cbct_tests PRIVATE test_cuda_ptx.cpp test_fdk_cuda.cpp)
