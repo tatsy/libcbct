@@ -1,5 +1,18 @@
 include(GoogleTest)
 
+# Exercise header-only diagnostics with assertions enabled even in Release.
+add_executable(cbct_logging_tests test_logging.cpp)
+target_include_directories(cbct_logging_tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_compile_features(cbct_logging_tests PRIVATE cxx_std_20)
+target_link_libraries(cbct_logging_tests PRIVATE GTest::gtest_main)
+gtest_discover_tests(cbct_logging_tests DISCOVERY_MODE PRE_TEST)
+
+add_executable(cbct_disabled_assert_test test_assert_disabled.cpp)
+target_include_directories(cbct_disabled_assert_test PRIVATE ${PROJECT_SOURCE_DIR}/src)
+target_compile_features(cbct_disabled_assert_test PRIVATE cxx_std_20)
+target_compile_definitions(cbct_disabled_assert_test PRIVATE LIBCBCT_DISABLE_ASSERT)
+add_test(NAME Logging.DisabledAssertions COMMAND cbct_disabled_assert_test)
+
 add_executable(cbct_tests
   test_filter.cpp
   test_geometry.cpp

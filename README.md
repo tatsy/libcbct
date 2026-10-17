@@ -111,8 +111,18 @@ Namespace aliases are optional and belong in consumer code. Public headers do no
 introduce global aliases for the former unqualified names. Update existing callers
 to use qualified names (or local using declarations) and rebuild downstream C++
 binaries, since moving public types and functions changes their ABI.
-Macros retain their existing names; logging functions such as
-`libcbct::LIBCBCT_INFO` are ordinary namespaced C++ functions.
+Logging and assertion APIs are ordinary namespaced C++ functions, including
+`libcbct::LIBCBCT_INFO` and `libcbct::LIBCBCT_ASSERT`. They keep compile-time
+checked `std::format` messages and report the caller's file, line, and function
+using `std::source_location`. Assertions abort on failure unless
+`LIBCBCT_DISABLE_ASSERT` is defined (as in Release builds). Function arguments
+are evaluated even when assertions are disabled; do not put side effects in
+assertion arguments. A function cannot stringify its condition, so supply a
+descriptive assertion message when useful.
+
+Use the existing `libcbct::kPi`, `kHalfPi`, `kTwoPi`, `kFourPi`, `kOneOverPi`,
+`kOneOverTwoPi`, and `kOneOverFourPi` APIs for mathematical constants. Their
+implementation uses `<numbers>` while retaining float/double conversions.
 
 ### Vulkan backend
 

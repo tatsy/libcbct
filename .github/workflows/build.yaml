@@ -1,4 +1,4 @@
-name: Ubuntu CI
+name: C++ CI
 
 on:
   push:
@@ -16,12 +16,16 @@ jobs:
         include:
           - compiler: gcc
             os: ubuntu-latest
+            cxx: g++
           - compiler: clang
             os: ubuntu-latest
+            cxx: clang++
           - compiler: clang
             os: macos-latest
+            cxx: /usr/bin/clang++
           - compiler: gcc
             os: macos-latest
+            cxx: g++
           - compiler: msvc
             os: windows-latest
 
@@ -32,17 +36,26 @@ jobs:
         with:
           submodules: true
 
-      - name: Install GNU C/C++ compiler
-        if: ${{ matrix.compiler == 'gcc' }}
-        run: |
-          export GNU_CC=gcc
-          export GNU_CXX=g++
+      - name: Install GCC (macOS)
+        if: ${{ runner.os == 'macOS' && matrix.compiler == 'gcc' }}
+        run: brew install gcc
 
-      - name: Install LLVM Clang
-        if: ${{ matrix.compiler == 'clang' }}
+      - name: Select C++ compiler
+        if: ${{ matrix.compiler != 'msvc' }}
+        id: compiler
+        shell: bash
+        env:
+          REQUESTED_CXX: ${{ matrix.cxx }}
         run: |
-          export LLVM_CC=clang
-          export LLVM_CXX=clang++
+          cxx="$REQUESTED_CXX"
+          if [[ "$RUNNER_OS" == 'macOS' && "$cxx" == 'g++' ]]; then
+            # The system g++ is Apple Clang; use Homebrew's versioned GCC binary.
+            candidates=("$(brew --prefix gcc)"/bin/g++-[0-9]*)
+            cxx="${candidates[0]}"
+          fi
+          compiler_path="$(command -v "$cxx")"
+          "$compiler_path" --version
+          echo "cxx=$compiler_path" >> "$GITHUB_OUTPUT"
 
       - name: Install OpenCV (Ubuntu)
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -51,15 +64,35 @@ jobs:
           sudo apt-get install -y libopencv-dev
 
       - name: Install OpenCV (macOS)
-        if: ${{ matrix.os == 'macos-latest' }}
+        if: ${{ matrix.os == 'macos-latest' && matrix.compiler == 'clang' }}
         run: |
           brew install opencv
 
+      - name: CMake configure (GCC/Clang)
+        if: ${{ matrix.compiler != 'msvc' }}
+        env:
+          SELECTED_CXX: ${{ steps.compiler.outputs.cxx }}
+          # OpenCV's Objective-C++ compiler detection also honors CXX.
+          CXX: ${{ steps.compiler.outputs.cxx }}
+          # Homebrew OpenCV uses libc++; GCC needs dependencies built with libstdc++.
+          OPENCV_FROM_SOURCE: ${{ runner.os == 'macOS' && matrix.compiler == 'gcc' && 'ON' || 'OFF' }}
+        run: >-
+          cmake -S . -B "${{ runner.workspace }}/build"
+          "-DCMAKE_CXX_COMPILER=$SELECTED_CXX"
+          "-DLIBCBCT_BUILD_OPENCV_FROM_SOURCE=$OPENCV_FROM_SOURCE"
+          -DCMAKE_BUILD_TYPE=Release -DLIBCBCT_BUILD_TESTS=ON
+
+      - name: CMake configure (MSVC)
+        if: ${{ matrix.compiler == 'msvc' }}
+        run: >-
+          cmake -S . -B "${{ runner.workspace }}/build"
+          -G "Visual Studio 17 2022" -A x64 -T v143
+          -DCMAKE_BUILD_TYPE=Release -DLIBCBCT_BUILD_TESTS=ON
+
       - name: CMake build
         run: |
-          cmake -S . -B ${{runner.workspace}}/build -DCMAKE_BUILD_TYPE=Release -D LIBCBCT_BUILD_TESTS=ON
-          cmake --build ${{runner.workspace}}/build --config Release --parallel 2
+          cmake --build "${{ runner.workspace }}/build" --config Release --parallel 2
 
       - name: Unit tests
         run: |
-          ctest --test-dir ${{runner.workspace}}/build --output-on-failure
+          ctest --test-dir "${{ runner.workspace }}/build" -C Release --output-on-failure

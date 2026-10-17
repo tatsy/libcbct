@@ -22,6 +22,12 @@
 - Qualify library references inside macros so that they work from a consumer's namespace.
 - Keep `main`, external ABI entry points, and third-party declarations in their required scopes. Shader entry-point names are independent of C++ namespaces.
 
+## C++ Utilities
+
+- Use the existing `kPi` family of APIs for mathematical constants; keep `<numbers>` usage inside `Common/Constants.h`.
+- Logging and assertions are namespaced functions using compile-time checked format strings and `std::source_location` for caller diagnostics.
+- Assertion arguments are evaluated even when `LIBCBCT_DISABLE_ASSERT` disables checking. Keep side effects out of assertion arguments.
+
 ## GPU Backend Development Roadmap
 
 - Preserve CPU and CUDA backend support while migrating. CUDA executes Slang PTX and Vulkan executes Slang SPIR-V; keep GPU kernel sources in Slang rather than maintaining handwritten `.cu` implementations.

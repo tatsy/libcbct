@@ -39,10 +39,10 @@ TEST(Namespace, VectorOperatorsAndMathWorkWithoutUsingDirectives) {
     EXPECT_FLOAT_EQ(cbct::clamp(a, cbct::vec3f(0.0f), cbct::vec3f(2.0f)).z, 2.0f);
 }
 
-TEST(Namespace, LoggingAndCheckMacrosWorkInConsumerScope) {
+TEST(Namespace, LoggingAndChecksWorkInConsumerScope) {
     EXPECT_EQ(cbct::STR_FMT("value={}", 7), "value=7");
     EXPECT_THROW(cbct::LIBCBCT_THROW<cbct::InvalidArgument>("invalid value"), cbct::InvalidArgument);
-    LIBCBCT_ASSERT(true, "A consumer can invoke the assertion macro");
+    cbct::LIBCBCT_ASSERT(true, "A consumer can invoke the assertion function");
 #if defined(LIBCBCT_WITH_CUDA)
     EXPECT_NO_THROW(CUDA_CHECK(cudaSuccess));
     EXPECT_NO_THROW(CUFFT_CHECK(CUFFT_SUCCESS));

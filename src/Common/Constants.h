@@ -5,8 +5,7 @@
 #ifndef LIBCBCT_CONSTANTS_H
 #define LIBCBCT_CONSTANTS_H
 
-#define _USE_MATH_DEFINES
-#include <math.h>
+#include <numbers>
 
 #include "Api.h"
 
@@ -14,81 +13,81 @@ namespace libcbct {
 
 struct PiType {
     LIBCBCT_HOST_DEVICE constexpr operator double() const {
-        return double(M_PI);
+        return std::numbers::pi_v<double>;
     }
 
     LIBCBCT_HOST_DEVICE constexpr operator float() const {
-        return float(M_PI);
+        return static_cast<float>(std::numbers::pi_v<double>);
     }
 };
 
-constexpr PiType kPi = PiType();
+inline constexpr PiType kPi{};
 
 struct HalfPiType {
     LIBCBCT_HOST_DEVICE constexpr operator double() const {
-        return double(M_PI_2);
+        return 0.5 * std::numbers::pi_v<double>;
     }
     LIBCBCT_HOST_DEVICE constexpr operator float() const {
-        return float(M_PI_2);
+        return static_cast<float>(0.5 * std::numbers::pi_v<double>);
     }
 };
 
-constexpr HalfPiType kHalfPi = HalfPiType();
+inline constexpr HalfPiType kHalfPi{};
 
 struct TwoPiType {
     LIBCBCT_HOST_DEVICE constexpr operator double() const {
-        return double(2.0 * M_PI);
+        return 2.0 * std::numbers::pi_v<double>;
     }
     LIBCBCT_HOST_DEVICE constexpr operator float() const {
-        return float(2.0f * M_PI);
+        return static_cast<float>(2.0 * std::numbers::pi_v<double>);
     }
 };
 
-constexpr TwoPiType kTwoPi = TwoPiType();
+inline constexpr TwoPiType kTwoPi{};
 
 struct FourPiType {
     LIBCBCT_HOST_DEVICE constexpr operator double() const {
-        return double(4.0 * M_PI);
+        return 4.0 * std::numbers::pi_v<double>;
     }
     LIBCBCT_HOST_DEVICE constexpr operator float() const {
-        return float(4.0f * M_PI);
+        return static_cast<float>(4.0 * std::numbers::pi_v<double>);
     }
 };
 
-constexpr FourPiType kFourPi = FourPiType();
+inline constexpr FourPiType kFourPi{};
 
 struct OneOverPiType {
     LIBCBCT_HOST_DEVICE constexpr operator double() const {
-        return double(M_1_PI);
+        return std::numbers::inv_pi_v<double>;
     }
     LIBCBCT_HOST_DEVICE constexpr operator float() const {
-        return float(M_1_PI);
+        return static_cast<float>(std::numbers::inv_pi_v<double>);
     }
 };
 
-constexpr OneOverPiType kOneOverPi = OneOverPiType();
+inline constexpr OneOverPiType kOneOverPi{};
 
 struct OneOverTwoPiType {
     LIBCBCT_HOST_DEVICE constexpr operator double() const {
-        return double(0.5 * M_1_PI);
+        return 0.5 * std::numbers::inv_pi_v<double>;
     }
     LIBCBCT_HOST_DEVICE constexpr operator float() const {
-        return float(0.5f * M_1_PI);
+        return static_cast<float>(0.5 * std::numbers::inv_pi_v<double>);
     }
 };
 
-constexpr OneOverTwoPiType kOneOverTwoPi = OneOverTwoPiType();
+inline constexpr OneOverTwoPiType kOneOverTwoPi{};
 
 struct OneOverFourPiType {
     LIBCBCT_HOST_DEVICE constexpr operator double() const {
-        return double(0.25 * M_1_PI);
+        return 0.25 * std::numbers::inv_pi_v<double>;
     }
     LIBCBCT_HOST_DEVICE constexpr operator float() const {
-        return float(0.25f * M_1_PI);
+        return static_cast<float>(0.25 * std::numbers::inv_pi_v<double>);
     }
 };
 
-constexpr OneOverFourPiType kOneOverFourPi = OneOverFourPiType();
+inline constexpr OneOverFourPiType kOneOverFourPi{};
 
 }  // namespace libcbct
 
