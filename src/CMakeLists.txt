@@ -65,6 +65,8 @@ else()
   set_target_properties(${LIBCBCT} PROPERTIES DEFINE_SYMBOL LIBCBCT_API_EXPORT)
 endif()
 
+target_compile_features(${LIBCBCT} PUBLIC cxx_std_20)
+
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${LIBCBCT_SOURCES} ${LIBCBCT_HEADERS})
 
 target_include_directories(${LIBCBCT}

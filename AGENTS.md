@@ -52,7 +52,7 @@
 ### Backend Selection and Data Movement
 
 - Select implementations per operator, with an overall backend setting supplying defaults and operator-specific settings providing overrides.
-- Treat CPU, CUDA, and Vulkan as execution/resource backends. CUDA operators use Slang PTX with CUDA memory and cuFFT; `slang-ptx` is a compatibility alias for `cuda`, not an additional backend or implementation choice.
+- Treat CPU, CUDA, and Vulkan as execution/resource backends. CUDA operators use Slang PTX with CUDA memory and cuFFT. The `slang-ptx` CLI backend name has been retired; use `cuda` and do not restore a compatibility alias for that CLI name.
 - Use backend-neutral buffer/view interfaces carrying shape, type, layout, and device/context ownership. Keep raw CUDA and Vulkan handles inside backend adapters.
 - Centralize allocation, transfers, synchronization, workspace reuse, FFT plans, and kernel/pipeline lifetimes in execution sessions and backend services.
   - Keep consecutive operations on the same device resident in device memory and reuse their stream or command batch. Avoid adding a transfer or host wait at every operator boundary.

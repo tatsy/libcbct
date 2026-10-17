@@ -14,6 +14,10 @@
 
 #include "libcbct.h"
 
+#if defined(LIBCBCT_WITH_VULKAN)
+#include "Utils/VulkanCompute.h"
+#endif
+
 namespace fs = std::filesystem;
 namespace cbct = libcbct;
 
@@ -73,7 +77,11 @@ int run(int argc, char **argv) {
         // Check for Vulkan availability
 #if defined(LIBCBCT_WITH_VULKAN)
         if (backend == "cpu") {
-            backend = "vulkan";
+            try {
+                if (!cbct::VulkanComputeContext::availableDevices().empty()) backend = "vulkan";
+            } catch (const cbct::VulkanUnavailable &) {
+                // A Vulkan build can run on a host without a compatible driver.
+            }
         }
 #endif
     }
