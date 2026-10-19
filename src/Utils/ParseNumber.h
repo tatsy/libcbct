@@ -2,8 +2,8 @@
 #pragma once
 #endif
 
-#ifndef LIBCBCT_CHECKED_SIZE_H
-#define LIBCBCT_CHECKED_SIZE_H
+#ifndef LIBCBCT_PARSE_NUMBER_H
+#define LIBCBCT_PARSE_NUMBER_H
 
 #include <format>
 #include <concepts>
@@ -32,4 +32,4 @@ T parseNumber(std::string_view text) {
 
 }  // namespace libcbct::detail
 
-#endif  // LIBCBCT_CHECKED_SIZE_H
+#endif  // LIBCBCT_PARSE_NUMBER_H

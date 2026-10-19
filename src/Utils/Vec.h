@@ -341,7 +341,6 @@ struct vec_t<T, 4> {
     }
 
     inline __both__ constexpr T &operator[](size_t dim) {
-        static_assert(dim < 4, "Index out of bounds for vec4");
         switch (dim) {
         case 0:
             return x;
@@ -660,14 +659,29 @@ inline __both__ vec_t<T, N> &operator/=(vec_t<T, N> &a, S scalar) {
 // GLSL-like functors
 // -------------------------------------------------------
 
-template <typename T>
-inline __both__ T length(const vec_t<T, 3> &v) {
-    return sqrtf(dot(v, v));
+template <std::floating_point T, int N>
+    requires(N >= 2 && N <= 4)
+inline __both__ T length(const vec_t<T, N> &v) {
+    return std::sqrt(dot(v, v));
 }
 
-template <typename T>
+template <typename T, int N>
+    requires(N >= 2 && N <= 4)
 inline __both__ T dot(const vec_t<T, 3> &a, const vec_t<T, 3> &b) {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
+    T result = T{ 0 };
+    result += a[0] * b[0];
+    result += a[1] * b[1];
+    if constexpr (N == 2) {
+        return result;
+    }
+
+    result += a[2] * b[2];
+    if constexpr (N == 3) {
+        return result;
+    }
+
+    result += a[3] * b[3];
+    return result;
 }
 
 template <typename T>
@@ -675,9 +689,10 @@ inline __both__ vec_t<T, 3> cross(const vec_t<T, 3> &a, const vec_t<T, 3> &b) {
     return vec_t<T, 3>(a.y * b.z - b.y * a.z, a.z * b.x - b.z * a.x, a.x * b.y - b.x * a.y);
 }
 
-template <typename T>
-inline __both__ vec_t<T, 3> normalize(const vec_t<T, 3> &v) {
-    return v * 1.0f / length(v);
+template <std::floating_point T, int N>
+    requires(N >= 2 && N <= 4)
+inline __both__ vec_t<T, N> normalize(const vec_t<T, N> &v) {
+    return v / length(v);
 }
 
 }  // namespace libcbct

@@ -24,7 +24,7 @@ set(LIBCBCT_HEADERS
   Utils/CudaUtils.h
   Utils/ImageUtils.h
   Utils/Normalization.h
-  Utils/ParseNumbers.h
+  Utils/ParseNumber.h
   Utils/Vec.h
   Utils/Volume.h
 )
