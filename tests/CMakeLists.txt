@@ -23,10 +23,32 @@ add_executable(cbct_tests
   test_projection_sequence.cpp
   test_fdk.cpp
   test_vec.cpp
+  test_checked_size.cpp
+  test_parse_number.cpp
+  test_settings_numbers.cpp
   test_errors.cpp)
 
 target_include_directories(cbct_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(cbct_tests PRIVATE ${LIBCBCT} GTest::gtest_main opencv_core opencv_imgcodecs)
+
+# Compile API contracts on demand so an ill-formed API does not block runtime tests.
+# These are positive tests: both compilation and execution must succeed.
+foreach(contract IN ITEMS vec_constexpr_constructors vec_constexpr_arithmetic
+    vec_scalar_left vec_mixed_compound vec_geometry volume_foreach)
+  set(contract_target cbct_contract_${contract})
+  add_executable(${contract_target} EXCLUDE_FROM_ALL contracts/${contract}.cpp)
+  target_link_libraries(${contract_target} PRIVATE ${LIBCBCT} GTest::gtest_main)
+  add_test(NAME Contracts.${contract}
+    COMMAND ${CMAKE_COMMAND}
+      "-DBUILD_DIR=${CMAKE_BINARY_DIR}"
+      "-DBUILD_CONFIG=$<CONFIG>"
+      "-DTEST_TARGET=${contract_target}"
+      "-DTEST_EXECUTABLE=$<TARGET_FILE:${contract_target}>"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/check_contract.cmake")
+  # Builds share one build tree, including when ctest runs with -j.
+  set_tests_properties(Contracts.${contract} PROPERTIES
+    RESOURCE_LOCK cbct_contract_build TIMEOUT 180)
+endforeach()
 
 # A consumer's lower requested standard must be raised by cbct's public requirements.
 add_executable(cbct_public_headers_test test_public_headers.cpp)
