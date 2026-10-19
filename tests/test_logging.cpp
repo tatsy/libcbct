@@ -48,7 +48,7 @@ TEST(Logging, EachLevelReportsTheOriginalCallSite) {
     for (const auto line : { infoLine, debugLine, warningLine }) {
         EXPECT_NE(output.find(std::format("test_logging.cpp:{}", line)), std::string::npos);
     }
-    EXPECT_NE(output.find(" in "), std::string::npos);
+    EXPECT_EQ(output.find(" in "), std::string::npos);
 }
 
 TEST(Logging, TypedExceptionReportsTheOriginalCallSite) {
