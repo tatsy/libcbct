@@ -22,6 +22,7 @@ add_executable(cbct_tests
   test_progress.cpp
   test_projection_sequence.cpp
   test_fdk.cpp
+  test_fdk_contracts.cpp
   test_vec.cpp
   test_checked_size.cpp
   test_parse_number.cpp

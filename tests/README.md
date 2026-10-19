@@ -1,5 +1,52 @@
 # Utility regression tests
 
+## FDK operator migration baseline
+
+`test_fdk_contracts.cpp` establishes numerical contracts before extracting the
+CPU operators. Run it with:
+
+```sh
+cmake --build build/cpu --config Release --parallel
+ctest --test-dir build/cpu -C Release -R 'FdkContracts|FdkSamplingContracts' --output-on-failure
+```
+
+The tests call the existing production APIs (`FeldkampCpu`, `makeRampResponse`,
+`makeCosineWeights`, and `bilerp`). `FdkReference.h` supplies a small double-precision
+oracle based on direct spatial convolution and explicit geometric formulas. It
+does not call the production FFT, filter, projection, or interpolation helpers.
+Keep this oracle independent when the production implementation changes. Its
+per-projection filtering and additive backprojection functions can also supply
+expected values for future operator tests. It is intended for small, valid
+fixtures, not arbitrary user inputs or reconstruction performance measurements.
+
+Both ramp filters are covered. The tests check:
+
+- Every frequency bin, including DC and Nyquist, against a direct DFT, with no
+  inverse-FFT normalization included in the public ramp response.
+- Pixel-center cosine weights with unequal detector pitches, and bilinear
+  interpolation/extrapolation at all four half-pixel borders.
+- A rectangular 17x19 detector, seven ordered views, asymmetric signed data,
+  output shape, input preservation, and finite values. The maximum absolute
+  difference from the independent FDK oracle must be below `1e-6`.
+- Edge impulses and distinct rows, exercising zero extension, filtering, and
+  cropping through the complete reconstruction path.
+- An analytic isocenter value and `pi/N` scaling for one, two, and seven views.
+- Detector-domain lower-edge inclusion, upper-edge exclusion, and zero output
+  outside the detector.
+- Additive contributions with projection slots retained, including zero views
+  after nonzero views, and repeat calls with changed dimensions and geometry.
+
+This is a baseline for the existing API, not a test implementation of the new
+operator API. Once those interfaces exist, add direct tests for padded-buffer
+overwrite, explicit backprojection into a nonzero destination, FFT round trips,
+shape/alias/context validation before writes, and session workspace reuse. The
+current whole-reconstruction tests cannot prove these intermediate-buffer or
+resource-lifetime contracts. Do not add placeholder tests that pass without
+calling production code. GPU/mixed-backend execution and forward/adjoint
+inner-product tests remain separate stages of the migration.
+
+## Utility test workflow
+
 Build the normal test targets, then run CTest (replace `build/cpu` with your
 configured build directory):
 
