@@ -1,12 +1,11 @@
-.venv
+# Python
+.venv/
 *.py[cod]
-__pycache__
+__pycache__/
 
-data/*
-build/*
-CMakeUserPresets.json
-.DS_Store
-
+# Data files
+data/
+build/
 *.raw
 *.tif
 *.tiff
@@ -14,4 +13,9 @@ CMakeUserPresets.json
 *.obj
 *.off
 
-Testing
+# Testing
+Testing/
+
+# Others
+.DS_Store
+CMakeUserPresets.json

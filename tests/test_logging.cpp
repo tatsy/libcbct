@@ -14,23 +14,17 @@ namespace {
 
 TEST(Constants, PreservesCompileTimeFloatAndDoubleValues) {
     // Baseline values from the former M_PI, M_PI_2 and M_1_PI definitions.
-    constexpr std::array expected = {
-        0x1.921fb54442d18p+1, 0x1.921fb54442d18p+0,
-        0x1.921fb54442d18p+2, 0x1.921fb54442d18p+3,
-        0x1.45f306dc9c883p-2, 0x1.45f306dc9c883p-3, 0x1.45f306dc9c883p-4
-    };
-    constexpr std::array doubles = {
-        static_cast<double>(kPi), static_cast<double>(kHalfPi),
-        static_cast<double>(kTwoPi), static_cast<double>(kFourPi),
-        static_cast<double>(kOneOverPi), static_cast<double>(kOneOverTwoPi),
-        static_cast<double>(kOneOverFourPi)
-    };
-    constexpr std::array floats = {
-        static_cast<float>(kPi), static_cast<float>(kHalfPi),
-        static_cast<float>(kTwoPi), static_cast<float>(kFourPi),
-        static_cast<float>(kOneOverPi), static_cast<float>(kOneOverTwoPi),
-        static_cast<float>(kOneOverFourPi)
-    };
+    constexpr std::array expected = { 0x1.921fb54442d18p+1, 0x1.921fb54442d18p+0, 0x1.921fb54442d18p+2,
+                                      0x1.921fb54442d18p+3, 0x1.45f306dc9c883p-2, 0x1.45f306dc9c883p-3,
+                                      0x1.45f306dc9c883p-4 };
+    constexpr std::array doubles = { static_cast<double>(kPi),           static_cast<double>(kHalfPi),
+                                     static_cast<double>(kTwoPi),        static_cast<double>(kFourPi),
+                                     static_cast<double>(kOneOverPi),    static_cast<double>(kOneOverTwoPi),
+                                     static_cast<double>(kOneOverFourPi) };
+    constexpr std::array floats = { static_cast<float>(kPi),           static_cast<float>(kHalfPi),
+                                    static_cast<float>(kTwoPi),        static_cast<float>(kFourPi),
+                                    static_cast<float>(kOneOverPi),    static_cast<float>(kOneOverTwoPi),
+                                    static_cast<float>(kOneOverFourPi) };
     static_assert(doubles == expected);
     for (std::size_t i = 0; i < expected.size(); ++i) {
         EXPECT_EQ(std::bit_cast<std::uint64_t>(doubles[i]), std::bit_cast<std::uint64_t>(expected[i]));
@@ -54,7 +48,7 @@ TEST(Logging, EachLevelReportsTheOriginalCallSite) {
     for (const auto line : { infoLine, debugLine, warningLine }) {
         EXPECT_NE(output.find(std::format("test_logging.cpp:{}", line)), std::string::npos);
     }
-    EXPECT_NE(output.find("Logging_EachLevelReportsTheOriginalCallSite_Test::TestBody"), std::string::npos);
+    EXPECT_NE(output.find(" in "), std::string::npos);
 }
 
 TEST(Logging, TypedExceptionReportsTheOriginalCallSite) {

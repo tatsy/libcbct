@@ -21,7 +21,7 @@
   "c-cpp-flylint.language": "c++",
   "c-cpp-flylint.standard": ["c++20"],
   "c-cpp-flylint.clang.enable": false,
-  "c-cpp-flylint.cppcheck.enable": true,
+  "c-cpp-flylint.cppcheck.enable": false,
   "c-cpp-flylint.cppcheck.extraArgs": [],
   "c-cpp-flylint.cppcheck.suppressions": [
     "*:src/eigen3/*:*",

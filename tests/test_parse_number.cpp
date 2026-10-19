@@ -39,11 +39,11 @@ TEST(ParseNumber, ConsumesExactStringViewIncludingEmbeddedNul) {
 }
 
 TEST(ParseNumber, RejectsEmptyMalformedAndOutOfRangeNumbers) {
-    for (const auto text : {"", "abc", "12abc", "1.5", "9999999999999999999999999"}) {
+    for (const auto text : { "", "abc", "12abc", "1.5", "9999999999999999999999999" }) {
         SCOPED_TRACE(text);
         EXPECT_THROW(detail::parseNumber<int>(text), InvalidArgument);
     }
-    for (const auto text : {"", "abc", "1.5abc", "1e", "1e1000", "1e-1000"}) {
+    for (const auto text : { "", "abc", "1.5abc", "1e", "1e1000", "1e-1000" }) {
         SCOPED_TRACE(text);
         EXPECT_THROW(detail::parseNumber<float>(text), InvalidArgument);
     }
