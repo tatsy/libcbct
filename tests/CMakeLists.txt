@@ -9,6 +9,7 @@ add_executable(cbct_tests
   test_progress.cpp
   test_projection_sequence.cpp
   test_fdk.cpp
+  test_vec.cpp
   test_errors.cpp)
 
 target_include_directories(cbct_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
