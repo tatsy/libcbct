@@ -7,6 +7,7 @@
 
 #include <format>
 #include <concepts>
+#include <charconv>
 #include <type_traits>
 
 #include "Common/Exception.h"
