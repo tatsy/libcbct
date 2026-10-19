@@ -88,10 +88,10 @@ int run(int argc, char **argv) {
     // Create reconstruction object based on the selected backend
     std::unique_ptr<cbct::ReconstructionBase> fdk;
     if (backend == "cpu") {
-        fdk = std::make_unique<cbct::FeldkampCPU>(cbct::RampFilter::SheppLogan);
+        fdk = std::make_unique<cbct::FeldkampCpu>(cbct::RampFilter::SheppLogan);
     } else if (backend == "cuda") {
 #if defined(LIBCBCT_WITH_CUDA)
-        fdk = std::make_unique<cbct::FeldkampCUDA>(configs["ptx-dir"].as<std::string>(), cbct::RampFilter::SheppLogan);
+        fdk = std::make_unique<cbct::FeldkampCuda>(configs["ptx-dir"].as<std::string>(), cbct::RampFilter::SheppLogan);
 #else
         throw libcbct::InvalidArgument("CUDA backend is unavailable; rebuild with LIBCBCT_WITH_CUDA=ON");
 #endif

@@ -6,12 +6,12 @@
 
 #include "IO/ImageSequenceImporter.h"
 #include "Phantom.h"
-#include "Reconstruction/FeldkampCPU.h"
+#include "Reconstruction/FeldkampCpu.h"
 #include "TestDirectory.h"
 
 #if defined(LIBCBCT_WITH_CUDA)
 #include <cuda_runtime.h>
-#include "Reconstruction/FeldkampCUDA.h"
+#include "Reconstruction/FeldkampCuda.h"
 #endif
 #if defined(LIBCBCT_WITH_VULKAN)
 #include "Reconstruction/FeldkampVulkan.h"
@@ -97,13 +97,12 @@ protected:
         setup.detSize = 32;
         setup.volSize = 24;
         const std::vector<testing_utils::Sphere> spheres = {
-            { 1.0, -1.2, 0.0, 0.9, 0.02 }, { -1.3, 0.8, 0.9, 0.55, 0.03 },
+            { 1.0, -1.2, 0.0, 0.9, 0.02 },
+            { -1.3, 0.8, 0.9, 0.55, 0.03 },
         };
         transmission = testing_utils::makeSphereSinogram(setup, spheres);
         // Simulate 16-bit transmission TIFFs with the CLI's free-ray convention.
-        transmission.forEach([](float integral) {
-            return std::round(65535.0f * std::exp(-integral) - 1.0f);
-        });
+        transmission.forEach([](float integral) { return std::round(65535.0f * std::exp(-integral) - 1.0f); });
     }
 
     VolumeF32 canonicalIntegrals() const {
@@ -135,13 +134,13 @@ protected:
 
 TEST_F(ProjectionPhantomTest, BothDirectionsAndEndpointPoliciesReconstructTheSameAsymmetricPhantom) {
     const auto canonical = canonicalIntegrals();
-    const auto expected = FeldkampCPU().reconstruct(canonical, setup.geometry());
+    const auto expected = FeldkampCpu().reconstruct(canonical, setup.geometry());
     for (bool clockwise : { false, true }) {
         for (bool duplicate : { false, true }) {
             const auto actual = readAcquisition(clockwise, duplicate, std::format("{}-{}", clockwise, duplicate));
             ASSERT_EQ(actual.size<2>(), setup.nProj);
             EXPECT_EQ(testing_utils::maxAbsDiff(canonical, actual), 0.0);
-            EXPECT_EQ(testing_utils::maxAbsDiff(expected, FeldkampCPU().reconstruct(actual, setup.geometry())), 0.0);
+            EXPECT_EQ(testing_utils::maxAbsDiff(expected, FeldkampCpu().reconstruct(actual, setup.geometry())), 0.0);
         }
     }
     // Ensure this phantom detects a direction error, rather than merely being rotationally symmetric.
@@ -151,7 +150,7 @@ TEST_F(ProjectionPhantomTest, BothDirectionsAndEndpointPoliciesReconstructTheSam
         std::copy_n(canonical.ptr() + (setup.nProj - p) * pixelsPerFrame, pixelsPerFrame,
                     wrongDirection.ptr() + p * pixelsPerFrame);
     }
-    EXPECT_GT(testing_utils::maxAbsDiff(expected, FeldkampCPU().reconstruct(wrongDirection, setup.geometry())), 1e-3);
+    EXPECT_GT(testing_utils::maxAbsDiff(expected, FeldkampCpu().reconstruct(wrongDirection, setup.geometry())), 1e-3);
 }
 
 #if defined(LIBCBCT_WITH_CUDA)
@@ -160,8 +159,8 @@ TEST_F(ProjectionPhantomTest, CudaUsesTheSame180AnglesAfterRemovingTheEndpoint) 
     if (cudaGetDeviceCount(&count) != cudaSuccess || count == 0) GTEST_SKIP() << "No CUDA device";
     const auto actual = readAcquisition(true, true, "cuda");
     ASSERT_EQ(actual.size<2>(), 180);
-    const auto expected = FeldkampCPU().reconstruct(canonicalIntegrals(), setup.geometry());
-    const auto gpu = FeldkampCUDA(LIBCBCT_SLANG_KERNEL_DIR).reconstruct(actual, setup.geometry());
+    const auto expected = FeldkampCpu().reconstruct(canonicalIntegrals(), setup.geometry());
+    const auto gpu = FeldkampCuda(LIBCBCT_SLANG_KERNEL_DIR).reconstruct(actual, setup.geometry());
     EXPECT_LT(testing_utils::maxAbsDiff(expected, gpu), 1e-6);
 }
 #endif
@@ -172,7 +171,7 @@ TEST_F(ProjectionPhantomTest, VulkanUsesTheSame180AnglesAfterRemovingTheEndpoint
         if (VulkanComputeContext::availableDevices().empty()) GTEST_SKIP() << "No Vulkan device";
         const auto actual = readAcquisition(true, true, "vulkan");
         ASSERT_EQ(actual.size<2>(), 180);
-        const auto expected = FeldkampCPU().reconstruct(canonicalIntegrals(), setup.geometry());
+        const auto expected = FeldkampCpu().reconstruct(canonicalIntegrals(), setup.geometry());
         const auto gpu = FeldkampVulkan(LIBCBCT_SLANG_KERNEL_DIR).reconstruct(actual, setup.geometry());
         EXPECT_LT(testing_utils::maxAbsDiff(expected, gpu), 1e-6);
     } catch (const VulkanUnavailable &error) {

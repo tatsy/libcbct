@@ -12,12 +12,12 @@
 namespace libcbct {
 
 // Execute Slang-generated PTX with CUDA memory and cuFFT.
-class LIBCBCT_API FeldkampCUDA : public ReconstructionBase {
+class LIBCBCT_API FeldkampCuda : public ReconstructionBase {
 public:
     // The default directory is the kernel directory configured for this build.
-    FeldkampCUDA(RampFilter filter = RampFilter::SheppLogan);
-    explicit FeldkampCUDA(std::filesystem::path kernelDirectory, RampFilter filter = RampFilter::SheppLogan);
-    ~FeldkampCUDA() = default;
+    FeldkampCuda(RampFilter filter = RampFilter::SheppLogan);
+    explicit FeldkampCuda(std::filesystem::path kernelDirectory, RampFilter filter = RampFilter::SheppLogan);
+    ~FeldkampCuda() = default;
     VolumeF32 reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const override;
 
 private:

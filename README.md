@@ -103,7 +103,7 @@ Library-owned C++ types, functions, and constants are defined in `libcbct`:
 namespace cbct = libcbct;
 
 cbct::VolumeF32 reconstruct(const cbct::VolumeF32 &sinogram, const cbct::Geometry &geometry) {
-    return cbct::FeldkampCPU(cbct::RampFilter::SheppLogan).reconstruct(sinogram, geometry);
+    return cbct::FeldkampCpu(cbct::RampFilter::SheppLogan).reconstruct(sinogram, geometry);
 }
 ```
 
@@ -224,7 +224,7 @@ are disabled. Vulkan-only builds do not need a CUDA toolkit; compiling kernels
 to PTX requires CUDA's NVRTC library during the build.
 
 `LIBCBCT_WITH_CUDA=ON` automatically enables `LIBCBCT_WITH_SLANG` and builds the
-PTX artifacts needed by `libcbct::FeldkampCUDA`. CUDA kernels are maintained in Slang;
+PTX artifacts needed by `libcbct::FeldkampCuda`. CUDA kernels are maintained in Slang;
 there are no handwritten `.cu` sources or CUDA-language compilation steps.
 The CUDA Toolkit, including NVRTC, is required to build this backend. CUDA Runtime,
 Driver API, and cuFFT remain its execution dependencies. CPU-only builds remain
@@ -271,22 +271,16 @@ host-side range checks and does not require Vulkan `shaderInt64`.
 The kernels retain voxel and detector pixel centers, half-pixel bilinear border
 extrapolation, and the `(SOD / L)^2` distance weight. Detector dimensions must be
 at least two for bilinear sampling. Keep the existing cuFFT pipeline and pass
-the response divided by `nPad`, as in `libcbct::FeldkampCUDA::reconstruct`. Initialize the
+the response divided by `nPad`, as in `libcbct::FeldkampCuda::reconstruct`. Initialize the
 volume before reconstruction, use `scale = pi / nProj`, and dispatch projection
 angles in order; volume accumulation is not atomic.
 
-`libcbct::FeldkampCUDA(kernelDirectory, filter)` loads the three PTX files once per
+`libcbct::FeldkampCuda(kernelDirectory, filter)` loads the three PTX files once per
 reconstruction and executes them using CUDA's primary context. Device buffers,
 cuFFT plans, copies, and kernel launches share one CUDA stream; each projection
-completes before the next one. `libcbct::FeldkampCUDA(filter)` uses the kernel directory
+completes before the next one. `libcbct::FeldkampCuda(filter)` uses the kernel directory
 configured for the library build. Resources are released after queued work completes, including on
 exceptions.
-
-`libcbct::FeldkampSlangCUDA` remains a source-compatible alias of `libcbct::FeldkampCUDA`; both names
-execute the same implementation. Rebuild downstream C++ binaries against the
-updated headers/library. The handwritten CUDA implementation has been retired;
-its pre-retirement [numerical and performance comparison](docs/benchmarks/cuda-slang-transition.md)
-records the measured tradeoff on a small phantom.
 
 Supply each `<entry>.ptx` together with its matching `<entry>.ptx.json` reflection
 file. The host validates parameter sizes, field offsets (including geometry

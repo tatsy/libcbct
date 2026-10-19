@@ -4,14 +4,14 @@
 #include <optional>
 
 #include "Phantom.h"
-#include "Reconstruction/FeldkampCPU.h"
+#include "Reconstruction/FeldkampCpu.h"
 #include "Reconstruction/FeldkampVulkan.h"
 #include "Utils/SlangSpirvKernel.h"
 #include "Utils/VulkanFft.h"
 
 #if defined(LIBCBCT_WITH_CUDA)
 #include <cuda_runtime.h>
-#include "Reconstruction/FeldkampCUDA.h"
+#include "Reconstruction/FeldkampCuda.h"
 #endif
 
 namespace libcbct::tests {
@@ -94,13 +94,13 @@ protected:
         }
     }
     void compare(const VolumeF32 &sinogram, const Geometry &geometry) {
-        const auto cpu = FeldkampCPU(GetParam()).reconstruct(sinogram, geometry);
+        const auto cpu = FeldkampCpu(GetParam()).reconstruct(sinogram, geometry);
         const auto vulkan = FeldkampVulkan(LIBCBCT_SLANG_KERNEL_DIR, GetParam()).reconstruct(sinogram, geometry);
         EXPECT_LT(maxAbsDiff(cpu, vulkan), 1e-6);
 #if defined(LIBCBCT_WITH_CUDA)
         int count = 0;
         if (cudaGetDeviceCount(&count) == cudaSuccess && count > 0) {
-            const auto cuda = FeldkampCUDA(GetParam()).reconstruct(sinogram, geometry);
+            const auto cuda = FeldkampCuda(GetParam()).reconstruct(sinogram, geometry);
             EXPECT_LT(maxAbsDiff(cuda, vulkan), 1e-6);
         }
 #endif

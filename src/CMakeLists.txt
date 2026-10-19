@@ -14,7 +14,7 @@ set(LIBCBCT_HEADERS
   IO/BaseImporter.h
   IO/ImageSequenceImporter.h
   IO/RawVolumeExporter.h
-  Reconstruction/FeldkampCPU.h
+  Reconstruction/FeldkampCpu.h
   Reconstruction/FilterUtils.h
   Reconstruction/ReconstructionBase.h
   Reconstruction/pocketfft_hdronly.h
@@ -32,15 +32,15 @@ set(LIBCBCT_HEADERS
 set(LIBCBCT_SOURCES
   IO/ImageSequenceImporter.cpp
   IO/RawVolumeExporter.cpp
-  Reconstruction/FeldkampCPU.cpp
+  Reconstruction/FeldkampCpu.cpp
   Reconstruction/FilterUtils.cpp
   Settings/JsonSettingImporter.cpp
 )
 
 if (LIBCBCT_WITH_CUDA)
-  list(APPEND LIBCBCT_HEADERS Reconstruction/FeldkampCUDA.h Reconstruction/FeldkampSlangCUDA.h
+  list(APPEND LIBCBCT_HEADERS Reconstruction/FeldkampCuda.h
     Reconstruction/Slang/FdkCudaParameters.h Utils/DeviceBuffer.h Utils/CudaPtxModule.h)
-  list(APPEND LIBCBCT_SOURCES Reconstruction/FeldkampCUDA.cpp Utils/CudaPtxModule.cpp)
+  list(APPEND LIBCBCT_SOURCES Reconstruction/FeldkampCuda.cpp Utils/CudaPtxModule.cpp)
 endif()
 
 if (LIBCBCT_WITH_VULKAN)

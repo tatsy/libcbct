@@ -18,10 +18,9 @@ TEST(Namespace, PublicTypesCoexistWithConsumerTypes) {
     static_assert(!std::is_same_v<::Geometry, cbct::Geometry>);
     static_assert(!std::is_same_v<::Volume<float>, cbct::Volume<float>>);
     static_assert(!std::is_same_v<::RampFilter, cbct::RampFilter>);
-    const cbct::Geometry geometry(cbct::vec2i(8, 8), cbct::vec2f(1.0f, 1.0f),
-                                  cbct::vec3i(4, 4, 4), 100.0f, 400.0f);
+    const cbct::Geometry geometry(cbct::vec2i(8, 8), cbct::vec2f(1.0f, 1.0f), cbct::vec3i(4, 4, 4), 100.0f, 400.0f);
     const cbct::VolumeF32 volume(4, 4, 4);
-    const cbct::FeldkampCPU reconstruction(cbct::RampFilter::RamLak);
+    const cbct::FeldkampCpu reconstruction(cbct::RampFilter::RamLak);
     EXPECT_EQ(geometry.volSize.x, volume.size<0>());
 }
 

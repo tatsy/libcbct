@@ -1,4 +1,4 @@
-#include "FeldkampCPU.h"
+#include "FeldkampCpu.h"
 
 #include <cmath>
 #include <vector>
@@ -16,7 +16,7 @@ namespace libcbct {
 
 namespace pfft = pocketfft;
 
-VolumeF32 FeldkampCPU::reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const {
+VolumeF32 FeldkampCpu::reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const {
     const size_t detWidth = sinogram.size<0>();
     const size_t detHeight = sinogram.size<1>();
     const size_t nProj = sinogram.size<2>();

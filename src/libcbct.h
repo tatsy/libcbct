@@ -19,18 +19,14 @@
 #include "IO/RawVolumeExporter.h"
 
 #include "Reconstruction/ReconstructionBase.h"
-#include "Reconstruction/FeldkampCPU.h"
+#include "Reconstruction/FeldkampCpu.h"
 
 #if defined(LIBCBCT_WITH_CUDA)
-#include "Reconstruction/FeldkampCUDA.h"
+#include "Reconstruction/FeldkampCuda.h"
 #endif  // LIBCBCT_WITH_CUDA
 
 #if defined(LIBCBCT_WITH_VULKAN)
 #include "Reconstruction/FeldkampVulkan.h"
-#endif
-
-#if defined(LIBCBCT_WITH_SLANG_CUDA)
-#include "Reconstruction/FeldkampSlangCUDA.h"
 #endif
 
 #include "Settings/SettingsImporterBase.h"

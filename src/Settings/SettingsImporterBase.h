@@ -11,6 +11,7 @@
 #include "Common/Api.h"
 #include "Common/Logging.h"
 #include "Common/Exception.h"
+#include "Utils/ParseNumber.h"
 
 namespace libcbct {
 
@@ -27,14 +28,14 @@ public:
         if (!this->hasKey(key)) {
             return defaultValue;
         }
-        return (int)std::strtol(this->getString(key).c_str(), NULL, 10);
+        return detail::parseNumber<int>(this->getString(key));
     }
 
     float getFloat(const std::string &key, float defaultValue = 0.0f) const {
         if (!this->hasKey(key)) {
             return defaultValue;
         }
-        return std::strtod(this->getString(key).c_str(), NULL);
+        return detail::parseNumber<float>(this->getString(key));
     }
 
     bool getBool(const std::string &key, bool defaultValue = false) const {

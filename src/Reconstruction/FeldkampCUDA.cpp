@@ -1,4 +1,4 @@
-#include "FeldkampCUDA.h"
+#include "FeldkampCuda.h"
 
 #include <cmath>
 #include <limits>
@@ -76,16 +76,16 @@ void launch(const libcbct::CudaPtxKernel &kernel, dim3 grid, Parameters &params,
 
 }  // namespace
 
-FeldkampCUDA::FeldkampCUDA(RampFilter filter)
-    : FeldkampCUDA(std::filesystem::path(LIBCBCT_SLANG_KERNEL_DIR), filter) {
+FeldkampCuda::FeldkampCuda(RampFilter filter)
+    : FeldkampCuda(std::filesystem::path(LIBCBCT_SLANG_KERNEL_DIR), filter) {
 }
 
-FeldkampCUDA::FeldkampCUDA(std::filesystem::path kernelDirectory, RampFilter filter)
+FeldkampCuda::FeldkampCuda(std::filesystem::path kernelDirectory, RampFilter filter)
     : kernelDirectory_(std::move(kernelDirectory))
     , filter_(filter) {
 }
 
-VolumeF32 FeldkampCUDA::reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const {
+VolumeF32 FeldkampCuda::reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const {
     using namespace libcbct::detail;
     const std::size_t detWidth = sinogram.size<0>();
     const std::size_t detHeight = sinogram.size<1>();

@@ -34,8 +34,10 @@ enum class VolumeType {
 template <typename T>
 class Volume {
 public:
-    explicit Volume(std::size_t sizeX = 0, std::size_t sizeY = 0, std::size_t sizeZ = 0) {
-        resize(static_cast<std::size_t>(sizeX), static_cast<std::size_t>(sizeY), static_cast<std::size_t>(sizeZ));
+    template <detail::SizeInteger X = std::size_t, detail::SizeInteger Y = std::size_t,
+              detail::SizeInteger Z = std::size_t>
+    explicit Volume(X sizeX = 0, Y sizeY = 0, Z sizeZ = 0) {
+        resize(sizeX, sizeY, sizeZ);
     }
 
     Volume(const Volume<T> &other)
@@ -154,27 +156,29 @@ public:
         OMP_PARALLEL_FOR(int z = 0; z < (int)shape_[2]; z++) {
             for (int y = 0; y < (int)shape_[1]; y++) {
                 for (int x = 0; x < (int)shape_[0]; x++) {
-                    (*this)(x, y, z) = func((*this)(x, y, z));
+                    (*this)(x, y, z) = std::invoke(func, static_cast<T>((*this)(x, y, z)));
                 }
             }
         }
     }
 
-    T reduce(const typename std::function<T(T, T)> &func, const T &init) const {
+    template <typename Func>
+        requires std::invocable<Func &, T, T> && std::convertible_to<std::invoke_result_t<Func &, T, T>, T>
+    T reduce(Func &&func, const T &init) const {
         auto buf = std::make_unique<T[]>(shape_[2]);
 
         OMP_PARALLEL_FOR(int z = 0; z < (int)shape_[2]; z++) {
             buf[z] = init;
             for (int y = 0; y < (int)shape_[1]; y++) {
                 for (int x = 0; x < (int)shape_[0]; x++) {
-                    buf[z] = func(buf[z], (*this)(x, y, z));
+                    buf[z] = std::invoke(func, buf[z], static_cast<T>((*this)(x, y, z)));
                 }
             }
         }
 
         T ret = init;
         for (int z = 0; z < (int)shape_[2]; z++) {
-            ret = func(ret, buf[z]);
+            ret = std::invoke(func, ret, buf[z]);
         }
 
         return ret;
@@ -235,20 +239,25 @@ public:
         return shape_[Dim];
     }
 
-    void resize(std::size_t x, std::size_t y, std::size_t z) {
-        const auto count = detail::checkedProduct(x, y, z);
+    template <detail::SizeInteger X, detail::SizeInteger Y, detail::SizeInteger Z>
+    void resize(X x, Y y, Z z) {
+        const auto sx = detail::checkedSize(x);
+        const auto sy = detail::checkedSize(y);
+        const auto sz = detail::checkedSize(z);
+
+        const auto count = detail::checkedProduct(sx, sy, sz);
         (void)detail::checkedProduct(count, sizeof(T));
 
         auto next = count ? std::make_unique<T[]>(count) : std::unique_ptr<T[]>();
 
         data_ = std::move(next);
-        shape_ = { x, y, z };
+        shape_ = { static_cast<std::size_t>(x), static_cast<std::size_t>(y), static_cast<std::size_t>(z) };
     }
 
     VolumeType type() const;
 
 private:
-    std::array<size_t, 3> shape_;
+    std::array<std::size_t, 3> shape_;
     std::unique_ptr<T[]> data_ = nullptr;
 };
 

@@ -9,13 +9,13 @@
 
 namespace libcbct {
 
-class LIBCBCT_API FeldkampCPU : public ReconstructionBase {
+class LIBCBCT_API FeldkampCpu : public ReconstructionBase {
 public:
-    FeldkampCPU(RampFilter filter = RampFilter::SheppLogan)
+    FeldkampCpu(RampFilter filter = RampFilter::SheppLogan)
         : ReconstructionBase()
         , filter(filter) {
     }
-    ~FeldkampCPU() = default;
+    ~FeldkampCpu() = default;
     VolumeF32 reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const override;
 
 private:

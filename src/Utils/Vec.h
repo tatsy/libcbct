@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdint>
+#include <array>
 #include <algorithm>
 #include <type_traits>
 
@@ -21,8 +22,9 @@ namespace libcbct {
 
 // Default vector type template
 template <typename T, int N>
+    requires(std::is_arithmetic_v<T> && N > 0)
 struct vec_t {
-    T t[N];
+    std::array<T, N> t;
 };
 
 // Binary Result type: scalar type with itself always returns same type
@@ -70,17 +72,9 @@ struct BinaryOpResultType<double, unsigned int> {
     typedef double type;
 };
 
-inline __both__ int32_t divRoundUp(int32_t a, int32_t b) {
-    return (a + b - 1) / b;
-}
-inline __both__ uint32_t divRoundUp(uint32_t a, uint32_t b) {
-    return (a + b - 1) / b;
-}
-inline __both__ int64_t divRoundUp(int64_t a, int64_t b) {
-    return (a + b - 1) / b;
-}
-inline __both__ uint64_t divRoundUp(uint64_t a, uint64_t b) {
-    return (a + b - 1) / b;
+template <std::integral T>
+inline __both__ T divRoundUp(T a, T b) {
+    return a / b + (((a % b) != 0) ? ((a ^ b) > 0) : 0);
 }
 
 // -----------------------------------------------------------------------------
@@ -92,12 +86,12 @@ struct vec_t<T, 2> {
     enum { dims = 2 };
     typedef T scalar_t;
 
-    inline __both__ vec_t()
+    inline __both__ constexpr vec_t()
         : x{}
         , y{} {
     }
 
-    inline __both__ vec_t(const T &t)
+    inline __both__ constexpr vec_t(const T &t)
         : x(t)
         , y(t) {
     }
@@ -107,15 +101,15 @@ struct vec_t<T, 2> {
     }
 
 #ifdef __CUDACC__
-    inline __both__ vec_t(const float2 &v)
+    inline __both__ constexpr vec_t(const float2 &v)
         : x(v.x)
         , y(v.y) {
     }
-    inline __both__ vec_t(const int2 &v)
+    inline __both__ constexpr vec_t(const int2 &v)
         : x(v.x)
         , y(v.y) {
     }
-    inline __both__ vec_t(const uint2 &v)
+    inline __both__ constexpr vec_t(const uint2 &v)
         : x(v.x)
         , y(v.y) {
     }
@@ -133,7 +127,7 @@ struct vec_t<T, 2> {
     inline __both__ vec_t<T, 2> &operator=(const vec_t<T, 2> &other) = default;
 
     template <typename Other>
-    inline __both__ explicit vec_t(const vec_t<Other, 2> &other)
+    inline __both__ explicit constexpr vec_t(const vec_t<Other, 2> &other)
         : x((T)other.x)
         , y((T)other.y) {
     }
@@ -178,13 +172,13 @@ struct vec_t<T, 3> {
     enum { dims = 3 };
     typedef T scalar_t;
 
-    inline __both__ vec_t()
+    inline __both__ constexpr vec_t()
         : x{}
         , y{}
         , z{} {
     }
 
-    inline __both__ vec_t(const T &t)
+    inline __both__ constexpr vec_t(const T &t)
         : x(t)
         , y(t)
         , z(t) {
@@ -196,17 +190,17 @@ struct vec_t<T, 3> {
     }
 
 #ifdef __CUDACC__
-    inline __both__ vec_t(const float3 &v)
+    inline __both__ constexpr vec_t(const float3 &v)
         : x(v.x)
         , y(v.y)
         , z(v.z) {
     }
-    inline __both__ vec_t(const int3 &v)
+    inline __both__ constexpr vec_t(const int3 &v)
         : x(v.x)
         , y(v.y)
         , z(v.z) {
     }
-    inline __both__ vec_t(const uint3 &v)
+    inline __both__ constexpr vec_t(const uint3 &v)
         : x(v.x)
         , y(v.y)
         , z(v.z) {
@@ -225,7 +219,7 @@ struct vec_t<T, 3> {
     inline __both__ vec_t &operator=(const vec_t &other) = default;
 
     template <typename Other>
-    inline __both__ explicit vec_t(const vec_t<Other, 3> &other)
+    inline __both__ explicit constexpr vec_t(const vec_t<Other, 3> &other)
         : x((T)other.x)
         , y((T)other.y)
         , z((T)other.z) {
@@ -275,13 +269,13 @@ struct vec_t<T, 4> {
     enum { dims = 4 };
     typedef T scalar_t;
 
-    inline __both__ vec_t()
+    inline __both__ constexpr vec_t()
         : x{}
         , y{}
         , z{}
         , w{} {
     }
-    inline __both__ vec_t(const T &t)
+    inline __both__ constexpr vec_t(const T &t)
         : x(t)
         , y(t)
         , z(t)
@@ -293,7 +287,7 @@ struct vec_t<T, 4> {
         , z(z)
         , w(w) {
     }
-    inline __both__ vec_t(const vec_t<T, 3> &v, const T &w)
+    inline __both__ constexpr vec_t(const vec_t<T, 3> &v, const T &w)
         : x(v.x)
         , y(v.y)
         , z(v.z)
@@ -301,19 +295,19 @@ struct vec_t<T, 4> {
     }
 
 #ifdef __CUDACC__
-    inline __both__ vec_t(const float4 &v)
+    inline __both__ constexpr vec_t(const float4 &v)
         : x(v.x)
         , y(v.y)
         , z(v.z)
         , w(v.w) {
     }
-    inline __both__ vec_t(const int4 &v)
+    inline __both__ constexpr vec_t(const int4 &v)
         : x(v.x)
         , y(v.y)
         , z(v.z)
         , w(v.w) {
     }
-    inline __both__ vec_t(const uint4 &v)
+    inline __both__ constexpr vec_t(const uint4 &v)
         : x(v.x)
         , y(v.y)
         , z(v.z)
@@ -333,7 +327,7 @@ struct vec_t<T, 4> {
     inline __both__ vec_t &operator=(const vec_t &other) = default;
 
     template <typename Other>
-    inline __both__ explicit vec_t(const vec_t<Other, 4> &other)
+    inline __both__ explicit constexpr vec_t(const vec_t<Other, 4> &other)
         : x((T)other.x)
         , y((T)other.y)
         , z((T)other.z)
@@ -414,92 +408,114 @@ inline __both__ T clamp(const T &val, const T &hi) {
     return clamp(val, (T)0, hi);
 }
 
-#define _define_float_functor(func, scalarFunc)                                                 \
-    template <typename T>                                                                       \
-    inline __both__ vec_t<T, 2> func(const vec_t<T, 2> &v) {                                    \
-        return vec_t<T, 2>(scalarFunc(v.x), scalarFunc(v.y));                                   \
-    }                                                                                           \
-                                                                                                \
-    template <typename T>                                                                       \
-    inline __both__ vec_t<T, 3> func(const vec_t<T, 3> &v) {                                    \
-        return vec_t<T, 3>(scalarFunc(v.x), scalarFunc(v.y), scalarFunc(v.z));                  \
-    }                                                                                           \
-                                                                                                \
-    template <typename T>                                                                       \
-    inline __both__ vec_t<T, 4> func(const vec_t<T, 4> &v) {                                    \
-        return vec_t<T, 4>(scalarFunc(v.x), scalarFunc(v.y), scalarFunc(v.z), scalarFunc(v.w)); \
+template <std::floating_point T, int N>
+inline __both__ vec_t<T, N> rcp(const vec_t<T, N> &v) {
+    vec_t<T, N> result;
+    for (int i = 0; i < N; ++i) {
+        result[i] = T(1.0) / v[i];
     }
+    return result;
+}
 
-// clang-format off
-_define_float_functor(rcp, rcp)
-_define_float_functor(sin, std::sin)
-_define_float_functor(cos, std::cos)
-_define_float_functor(abs, std::abs)
-_define_float_functor(sqrt, std::sqrt)
-_define_float_functor(saturate, saturate)
-// clang-format on
+template <std::floating_point T, int N>
+inline __both__ vec_t<T, N> sin(const vec_t<T, N> &v) {
+    vec_t<T, N> result;
+    for (int i = 0; i < N; ++i) {
+        result[i] = std::sin(v[i]);
+    }
+    return result;
+}
 
-#undef _define_float_functor
+template <std::floating_point T, int N>
+inline __both__ vec_t<T, N> cos(const vec_t<T, N> &v) {
+    vec_t<T, N> result;
+    for (int i = 0; i < N; ++i) {
+        result[i] = std::cos(v[i]);
+    }
+    return result;
+}
+
+template <std::floating_point T, int N>
+inline __both__ vec_t<T, N> tan(const vec_t<T, N> &v) {
+    vec_t<T, N> result;
+    for (int i = 0; i < N; ++i) {
+        result[i] = std::tan(v[i]);
+    }
+    return result;
+}
+
+template <std::floating_point T, int N>
+inline __both__ vec_t<T, N> sqrt(const vec_t<T, N> &v) {
+    vec_t<T, N> result;
+    for (int i = 0; i < N; ++i) {
+        result[i] = std::sqrt(v[i]);
+    }
+    return result;
+}
+
+template <std::floating_point T, int N>
+inline __both__ vec_t<T, N> saturate(const vec_t<T, N> &v) {
+    vec_t<T, N> result;
+    for (int i = 0; i < N; ++i) {
+        result[i] = clamp(v[i], T(0.0), T(1.0));
+    }
+    return result;
+}
+
+template <typename T, int N>
+inline __both__ vec_t<T, N> abs(const vec_t<T, N> &v) {
+    vec_t<T, N> result;
+    for (int i = 0; i < N; ++i) {
+        result[i] = std::abs(v[i]);
+    }
+    return result;
+}
 
 // -------------------------------------------------------
 // binary functors
 // -------------------------------------------------------
 
-#define _define_binary_functor(fct, scalarFunc)                                                                      \
-    template <typename T>                                                                                            \
-    __both__ vec_t<T, 1> fct(const vec_t<T, 1> &a, const vec_t<T, 1> &b) {                                           \
-        return vec_t<T, 1>(scalarFunc(a.x, b.x));                                                                    \
-    }                                                                                                                \
-                                                                                                                     \
-    template <typename T>                                                                                            \
-    __both__ vec_t<T, 2> fct(const vec_t<T, 2> &a, const vec_t<T, 2> &b) {                                           \
-        return vec_t<T, 2>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y));                                              \
-    }                                                                                                                \
-                                                                                                                     \
-    template <typename T>                                                                                            \
-    __both__ vec_t<T, 3> fct(const vec_t<T, 3> &a, const vec_t<T, 3> &b) {                                           \
-        return vec_t<T, 3>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y), scalarFunc(a.z, b.z));                        \
-    }                                                                                                                \
-                                                                                                                     \
-    template <typename T1, typename T2>                                                                              \
-    __both__ vec_t<typename BinaryOpResultType<T1, T2>::type, 3> fct(const vec_t<T1, 3> &a, const vec_t<T2, 3> &b) { \
-        return vec_t<typename BinaryOpResultType<T1, T2>::type, 3>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y),       \
-                                                                   scalarFunc(a.z, b.z));                            \
-    }                                                                                                                \
-                                                                                                                     \
-    template <typename T>                                                                                            \
-    __both__ vec_t<T, 4> fct(const vec_t<T, 4> &a, const vec_t<T, 4> &b) {                                           \
-        return vec_t<T, 4>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y), scalarFunc(a.z, b.z), scalarFunc(a.w, b.w));  \
-    }
-
-    // clang-format off
-_define_binary_functor(divRoundUp, libcbct::divRoundUp)
-_define_binary_functor(min, std::min)
-_define_binary_functor(max, std::max)
-// clang-format on
-
-#undef _define_binary_functor
-
-    // -------------------------------------------------------
-    // unary operators
-    // -------------------------------------------------------
-
-    template <typename T, int N>
+template <typename T, int N>
     requires(N >= 2 && N <= 4)
-inline __both__ vec_t<T, N> operator-(const vec_t<T, N> &v) {
+inline __both__ vec_t<T, N> min(const vec_t<T, N> &a, const vec_t<T, N> &b) {
     vec_t<T, N> result;
-    result[0] = -v[0];
-    result[1] = -v[1];
-    if constexpr (N == 2) {
-        return result;
+    for (int i = 0; i < N; ++i) {
+        result[i] = std::min(a[i], b[i]);
     }
+    return result;
+}
 
-    result[2] = -v[2];
-    if constexpr (N == 3) {
-        return result;
+template <typename T, int N>
+    requires(N >= 2 && N <= 4)
+inline __both__ vec_t<T, N> max(const vec_t<T, N> &a, const vec_t<T, N> &b) {
+    vec_t<T, N> result;
+    for (int i = 0; i < N; ++i) {
+        result[i] = std::max(a[i], b[i]);
     }
+    return result;
+}
 
-    result[3] = -v[3];
+template <std::integral T, int N>
+    requires(N >= 2 && N <= 4)
+inline __both__ vec_t<T, N> divRoundUp(const vec_t<T, N> &a, const vec_t<T, N> &b) {
+    vec_t<T, N> result;
+    for (int i = 0; i < N; ++i) {
+        result[i] = libcbct::divRoundUp(a[i], b[i]);
+    }
+    return result;
+}
+
+// -------------------------------------------------------
+// unary operators
+// -------------------------------------------------------
+
+template <typename T, int N>
+    requires(N >= 2 && N <= 4)
+inline __both__ constexpr vec_t<T, N> operator-(const vec_t<T, N> &v) {
+    vec_t<T, N> result;
+    for (int i = 0; i < N; ++i) {
+        result[i] = -v[i];
+    }
     return result;
 }
 
@@ -509,7 +525,7 @@ inline __both__ vec_t<T, N> operator-(const vec_t<T, N> &v) {
 
 template <typename T, int N>
     requires(N >= 2 && N <= 4)
-constexpr vec_t<T, N> operator+(const vec_t<T, N> &a, const vec_t<T, N> &b) {
+inline __both__ constexpr vec_t<T, N> operator+(const vec_t<T, N> &a, const vec_t<T, N> &b) {
     vec_t<T, N> result;
     for (int i = 0; i < N; ++i) {
         result[i] = a[i] + b[i];
@@ -521,12 +537,22 @@ template <typename T, int N, typename S>
     requires(N >= 2 && N <= 4 && std::is_arithmetic_v<S>)
 inline __both__ auto operator+(const vec_t<T, N> &v, S scalar) {
     using R = typename BinaryOpResultType<T, S>::type;
-    return vec_t<R, N>(v) + vec_t<R, N>(static_cast<R>(scalar));
+    vec_t<R, N> result;
+    for (int i = 0; i < N; ++i) {
+        result[i] = static_cast<R>(v[i]) + static_cast<R>(scalar);
+    }
+    return result;
+}
+
+template <typename T, int N, typename S>
+    requires(N >= 2 && N <= 4 && std::is_arithmetic_v<S>)
+inline __both__ auto operator+(S scalar, const vec_t<T, N> &v) {
+    return v + scalar;
 }
 
 template <typename T, int N>
     requires(N >= 2 && N <= 4)
-constexpr vec_t<T, N> operator-(const vec_t<T, N> &a, const vec_t<T, N> &b) {
+inline __both__ constexpr vec_t<T, N> operator-(const vec_t<T, N> &a, const vec_t<T, N> &b) {
     vec_t<T, N> result;
     for (int i = 0; i < N; ++i) {
         result[i] = a[i] - b[i];
@@ -541,9 +567,16 @@ inline __both__ auto operator-(const vec_t<T, N> &v, S scalar) {
     return vec_t<R, N>(v) - vec_t<R, N>(static_cast<R>(scalar));
 }
 
+template <typename T, int N, typename S>
+    requires(N >= 2 && N <= 4 && std::is_arithmetic_v<S>)
+inline __both__ auto operator-(S scalar, const vec_t<T, N> &v) {
+    using R = typename BinaryOpResultType<T, S>::type;
+    return vec_t<R, N>(static_cast<R>(scalar)) - vec_t<R, N>(v);
+}
+
 template <typename T, int N>
     requires(N >= 2 && N <= 4)
-constexpr vec_t<T, N> operator*(const vec_t<T, N> &a, const vec_t<T, N> &b) {
+inline __both__ constexpr vec_t<T, N> operator*(const vec_t<T, N> &a, const vec_t<T, N> &b) {
     vec_t<T, N> result;
     for (int i = 0; i < N; ++i) {
         result[i] = a[i] * b[i];
@@ -558,9 +591,15 @@ inline __both__ auto operator*(const vec_t<T, N> &v, S scalar) {
     return vec_t<R, N>(v) * vec_t<R, N>(static_cast<R>(scalar));
 }
 
+template <typename T, int N, typename S>
+    requires(N >= 2 && N <= 4 && std::is_arithmetic_v<S>)
+inline __both__ auto operator*(S scalar, const vec_t<T, N> &v) {
+    return v * scalar;
+}
+
 template <typename T, int N>
     requires(N >= 2 && N <= 4)
-constexpr vec_t<T, N> operator/(const vec_t<T, N> &a, const vec_t<T, N> &b) {
+inline __both__ constexpr vec_t<T, N> operator/(const vec_t<T, N> &a, const vec_t<T, N> &b) {
     vec_t<T, N> result;
     for (int i = 0; i < N; ++i) {
         result[i] = a[i] / b[i];
@@ -575,31 +614,29 @@ inline __both__ auto operator/(const vec_t<T, N> &v, S scalar) {
     return vec_t<R, N>(v) / vec_t<R, N>(static_cast<R>(scalar));
 }
 
+template <typename T, int N, typename S>
+    requires(N >= 2 && N <= 4 && std::is_arithmetic_v<S>)
+inline __both__ auto operator/(S scalar, const vec_t<T, N> &v) {
+    using R = typename BinaryOpResultType<T, S>::type;
+    return vec_t<R, N>(static_cast<R>(scalar)) / vec_t<R, N>(v);
+}
+
 // -------------------------------------------------------
 // compare operators
 // -------------------------------------------------------
 
 template <typename T, int N>
     requires(N >= 2 && N <= 4)
-inline __both__ bool operator==(const vec_t<T, N> &a, const vec_t<T, N> &b) {
-    if (a[0] != b[0]) return false;
-    if (a[1] != b[1]) return false;
-    if constexpr (N == 2) {
-        return true;
+inline __both__ constexpr bool operator==(const vec_t<T, N> &a, const vec_t<T, N> &b) {
+    for (int i = 0; i < N; ++i) {
+        if (a[i] != b[i]) return false;
     }
-
-    if (a[2] != b[2]) return false;
-    if constexpr (N == 3) {
-        return true;
-    }
-
-    if (a[3] != b[3]) return false;
     return true;
 }
 
 template <typename T, int N>
     requires(N >= 2 && N <= 4)
-inline __both__ bool operator!=(const vec_t<T, N> &a, const vec_t<T, N> &b) {
+inline __both__ constexpr bool operator!=(const vec_t<T, N> &a, const vec_t<T, N> &b) {
     return !(a == b);
 }
 
@@ -608,50 +645,66 @@ inline __both__ bool operator!=(const vec_t<T, N> &a, const vec_t<T, N> &b) {
 // -------------------------------------------------------
 
 template <typename T, int N>
+    requires(N >= 2 && N <= 4)
 inline __both__ vec_t<T, N> &operator+=(vec_t<T, N> &a, const vec_t<T, N> &b) {
     a = a + b;
     return a;
 }
 
 template <typename T, int N, typename S>
+    requires(N >= 2 && N <= 4 && std::is_arithmetic_v<S>)
 inline __both__ vec_t<T, N> &operator+=(vec_t<T, N> &a, S scalar) {
-    a = a + scalar;
+    for (int i = 0; i < N; ++i) {
+        a[i] += scalar;
+    }
     return a;
 }
 
 template <typename T, int N>
+    requires(N >= 2 && N <= 4)
 inline __both__ vec_t<T, N> &operator-=(vec_t<T, N> &a, const vec_t<T, N> &b) {
     a = a - b;
     return a;
 }
 
 template <typename T, int N, typename S>
+    requires(N >= 2 && N <= 4 && std::is_arithmetic_v<S>)
 inline __both__ vec_t<T, N> &operator-=(vec_t<T, N> &a, S scalar) {
-    a = a - scalar;
+    for (int i = 0; i < N; ++i) {
+        a[i] -= scalar;
+    }
     return a;
 }
 
 template <typename T, int N>
+    requires(N >= 2 && N <= 4)
 inline __both__ vec_t<T, N> &operator*=(vec_t<T, N> &a, const vec_t<T, N> &b) {
     a = a * b;
     return a;
 }
 
 template <typename T, int N, typename S>
+    requires(N >= 2 && N <= 4 && std::is_arithmetic_v<S>)
 inline __both__ vec_t<T, N> &operator*=(vec_t<T, N> &a, S scalar) {
-    a = a * scalar;
+    for (int i = 0; i < N; ++i) {
+        a[i] *= scalar;
+    }
     return a;
 }
 
 template <typename T, int N>
+    requires(N >= 2 && N <= 4)
 inline __both__ vec_t<T, N> &operator/=(vec_t<T, N> &a, const vec_t<T, N> &b) {
     a = a / b;
     return a;
 }
 
 template <typename T, int N, typename S>
+    requires(N >= 2 && N <= 4 && std::is_arithmetic_v<S>)
 inline __both__ vec_t<T, N> &operator/=(vec_t<T, N> &a, S scalar) {
-    a = a / scalar;
+    for (int i = 0; i < N; ++i) {
+        a[i] /= scalar;
+    }
     return a;
 }
 
@@ -667,20 +720,11 @@ inline __both__ T length(const vec_t<T, N> &v) {
 
 template <typename T, int N>
     requires(N >= 2 && N <= 4)
-inline __both__ T dot(const vec_t<T, 3> &a, const vec_t<T, 3> &b) {
-    T result = T{ 0 };
-    result += a[0] * b[0];
-    result += a[1] * b[1];
-    if constexpr (N == 2) {
-        return result;
+inline __both__ T dot(const vec_t<T, N> &a, const vec_t<T, N> &b) {
+    T result = a[0] * b[0];
+    for (int i = 1; i < N; ++i) {
+        result += a[i] * b[i];
     }
-
-    result += a[2] * b[2];
-    if constexpr (N == 3) {
-        return result;
-    }
-
-    result += a[3] * b[3];
     return result;
 }
 
