@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <format>
 #include <iostream>
+#include <filesystem>
 #include <source_location>
 #include <string>
 #include <string_view>
@@ -15,6 +16,8 @@
 #include <utility>
 
 #include "Exception.h"
+
+namespace fs = std::filesystem;
 
 namespace libcbct {
 
@@ -35,23 +38,30 @@ struct FormatWithLocation {
 
     constexpr FormatWithLocation(std::format_string<Args...> fmt,
                                  std::source_location where = std::source_location::current())
-        : format(fmt), location(where) {
+        : format(fmt)
+        , location(where) {
     }
 
     template <typename T>
-    consteval FormatWithLocation(const T &fmt,
-                                std::source_location where = std::source_location::current())
-        : format(fmt), location(where) {
+    consteval FormatWithLocation(const T &fmt, std::source_location where = std::source_location::current())
+        : format(fmt)
+        , location(where) {
     }
 };
 
-inline std::string diagnosticMessage(std::string_view message, std::source_location where) {
-    return std::format("{} ({}:{} in {})", message, where.file_name(), where.line(), where.function_name());
+inline std::string diagnosticMessage(std::string_view message, std::source_location where, bool shortVersion = false) {
+    fs::path file_path(where.file_name());
+    const std::string base_name = file_path.filename().string();
+    if (shortVersion) {
+        return std::format("{} ({}:{})", message, base_name, where.line());
+    }
+    return std::format("{} ({}:{} in {})", message, base_name, where.line(), where.function_name());
 }
 
 inline void writeLog(std::string_view color, std::string_view level, std::string_view message,
-                     std::source_location where) {
-    std::cout << color << '[' << level << "] " << kLogResetColor << diagnosticMessage(message, where) << std::endl;
+                     std::source_location where, bool shortVersion = false) {
+    std::cout << color << '[' << level << "] " << kLogResetColor << diagnosticMessage(message, where, shortVersion)
+              << std::endl;
 }
 
 }  // namespace detail
@@ -71,17 +81,20 @@ std::string STR_FMT(std::format_string<Args...> fmt, Args &&...args) {
 
 template <typename... Args>
 void LIBCBCT_INFO(detail::FormatWithLocation<std::type_identity_t<Args>...> fmt, Args &&...args) {
-    detail::writeLog(detail::kLogInfoColor, "INFO", std::format(fmt.format, std::forward<Args>(args)...), fmt.location);
+    detail::writeLog(detail::kLogInfoColor, "INFO", std::format(fmt.format, std::forward<Args>(args)...), fmt.location,
+                     true);
 }
 
 template <typename... Args>
 void LIBCBCT_DEBUG(detail::FormatWithLocation<std::type_identity_t<Args>...> fmt, Args &&...args) {
-    detail::writeLog(detail::kLogDebugColor, "DEBUG", std::format(fmt.format, std::forward<Args>(args)...), fmt.location);
+    detail::writeLog(detail::kLogDebugColor, "DEBUG", std::format(fmt.format, std::forward<Args>(args)...),
+                     fmt.location, true);
 }
 
 template <typename... Args>
 void LIBCBCT_WARN(detail::FormatWithLocation<std::type_identity_t<Args>...> fmt, Args &&...args) {
-    detail::writeLog(detail::kLogWarningColor, "WARNING", std::format(fmt.format, std::forward<Args>(args)...), fmt.location);
+    detail::writeLog(detail::kLogWarningColor, "WARNING", std::format(fmt.format, std::forward<Args>(args)...),
+                     fmt.location, true);
 }
 
 template <typename E = libcbct::Error, typename... Args>
@@ -98,8 +111,7 @@ template <typename... Args>
 // Assertion with message
 // -----------------------------------------------------------------------------
 
-inline std::string ASRT_LABEL(std::string_view message,
-                              std::source_location where = std::source_location::current()) {
+inline std::string ASRT_LABEL(std::string_view message, std::source_location where = std::source_location::current()) {
     return detail::diagnosticMessage(std::format("Assertion failed: {}", message), where);
 }
 
