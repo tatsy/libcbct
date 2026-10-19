@@ -20,9 +20,11 @@ set(LIBCBCT_HEADERS
   Reconstruction/pocketfft_hdronly.h
   Settings/JsonSettingImporter.h
   Settings/SettingsImporterBase.h
+  Utils/CheckedSize.h
   Utils/CudaUtils.h
   Utils/ImageUtils.h
   Utils/Normalization.h
+  Utils/ParseNumbers.h
   Utils/Vec.h
   Utils/Volume.h
 )

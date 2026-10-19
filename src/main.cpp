@@ -20,8 +20,8 @@ namespace cbct = libcbct;
 namespace {
 
 static void onTrackbar(int pos, void *userdata) {
-    const cbct::VolumeF32 &tomogram = *(cbct::VolumeF32 *)userdata;
-    const int volSize = tomogram.size<0>();
+    cbct::VolumeF32 &tomogram = *(cbct::VolumeF32 *)userdata;
+    const size_t volSize = tomogram.size<0>();
     const cv::Mat slice(volSize, volSize, CV_32FC1, tomogram.ptr() + (volSize * volSize * pos));
     cv::imshow("volume", slice);
 }
@@ -139,8 +139,8 @@ int run(int argc, char **argv) {
     cbct::VolumeF32 sinogram = cbct::ImageSequenceImporter(imagePath.string(), ".tif", projectionOptions).read();
 
     if (sinogram.size<0>() != detWidth || sinogram.size<1>() != detHeight || sinogram.size<2>() != numberOfProj) {
-        cbct::LIBCBCT_ERROR("Sinogram size mismatch! Expected: ({}, {}, {}), Actual: ({}, {}, {})", detWidth,
-                            detHeight, numberOfProj, sinogram.size<0>(), sinogram.size<1>(), sinogram.size<2>());
+        cbct::LIBCBCT_ERROR("Sinogram size mismatch! Expected: ({}, {}, {}), Actual: ({}, {}, {})", detWidth, detHeight,
+                            numberOfProj, sinogram.size<0>(), sinogram.size<1>(), sinogram.size<2>());
     }
     sinogram.forEach([freeRay](float v) -> float { return -std::log((v + 1.0f) / freeRay); });
 

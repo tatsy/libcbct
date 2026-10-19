@@ -49,7 +49,7 @@ VolumeF32 FeldkampCPU::reconstruct(const VolumeF32 &sinogram, const Geometry &ge
     for (size_t i = 0; i < nProj; i++) {
         // Copy sinogram slice and apply cosine weights
         std::fill(padded.begin(), padded.end(), 0.0f);
-        float *const ptr = sinogram.ptr() + (detWidth * detHeight * (uint64_t)i);
+        const float *const ptr = sinogram.ptr() + (detWidth * detHeight * (uint64_t)i);
         for (size_t y = 0; y < detHeight; y++) {
             for (size_t x = 0; x < detWidth; x++) {
                 padded[y * nPad + x] = ptr[y * detWidth + x] * cosWeights[y * detWidth + x];

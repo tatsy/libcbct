@@ -6,9 +6,9 @@
 #include <stdint.h>
 
 #ifdef __CUDACC__
-  #define __both__ __host__ __device__
+#define __both__ __host__ __device__
 #else
-  #define __both__
+#define __both__
 #endif
 
 namespace libcbct {
@@ -21,7 +21,10 @@ struct vec_t {
 
 // Binary Result type: scalar type with itself always returns same type
 template <typename ScalarTypeA, typename ScalarTypeB>
-struct BinaryOpResultType;
+struct BinaryOpResultType {
+    using type = std::common_type_t<ScalarTypeA, ScalarTypeB>;
+};
+
 template <typename ScalarType>
 struct BinaryOpResultType<ScalarType, ScalarType> {
     typedef ScalarType type;
@@ -392,8 +395,8 @@ _define_vec_types(double, d);
 
 template <typename T>
 inline __both__ T clamp(const T &val, const T &lo, const T &hi) {
-    using std::min;
     using std::max;
+    using std::min;
     return min(hi, max(lo, val));
 }
 
@@ -433,30 +436,31 @@ _define_float_functor(saturate, saturate)
 // binary functors
 // -------------------------------------------------------
 
-#define _define_binary_functor(fct, scalarFunc)                                                                                       \
-    template <typename T>                                                                                                             \
-    __both__ vec_t<T, 1> fct(const vec_t<T, 1> &a, const vec_t<T, 1> &b) {                                                            \
-        return vec_t<T, 1>(scalarFunc(a.x, b.x));                                                                                     \
-    }                                                                                                                                 \
-                                                                                                                                      \
-    template <typename T>                                                                                                             \
-    __both__ vec_t<T, 2> fct(const vec_t<T, 2> &a, const vec_t<T, 2> &b) {                                                            \
-        return vec_t<T, 2>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y));                                                               \
-    }                                                                                                                                 \
-                                                                                                                                      \
-    template <typename T>                                                                                                             \
-    __both__ vec_t<T, 3> fct(const vec_t<T, 3> &a, const vec_t<T, 3> &b) {                                                            \
-        return vec_t<T, 3>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y), scalarFunc(a.z, b.z));                                         \
-    }                                                                                                                                 \
-                                                                                                                                      \
-    template <typename T1, typename T2>                                                                                               \
-    __both__ vec_t<typename BinaryOpResultType<T1, T2>::type, 3> fct(const vec_t<T1, 3> &a, const vec_t<T2, 3> &b) {                  \
-        return vec_t<typename BinaryOpResultType<T1, T2>::type, 3>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y), scalarFunc(a.z, b.z)); \
-    }                                                                                                                                 \
-                                                                                                                                      \
-    template <typename T>                                                                                                             \
-    __both__ vec_t<T, 4> fct(const vec_t<T, 4> &a, const vec_t<T, 4> &b) {                                                            \
-        return vec_t<T, 4>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y), scalarFunc(a.z, b.z), scalarFunc(a.w, b.w));                   \
+#define _define_binary_functor(fct, scalarFunc)                                                                      \
+    template <typename T>                                                                                            \
+    __both__ vec_t<T, 1> fct(const vec_t<T, 1> &a, const vec_t<T, 1> &b) {                                           \
+        return vec_t<T, 1>(scalarFunc(a.x, b.x));                                                                    \
+    }                                                                                                                \
+                                                                                                                     \
+    template <typename T>                                                                                            \
+    __both__ vec_t<T, 2> fct(const vec_t<T, 2> &a, const vec_t<T, 2> &b) {                                           \
+        return vec_t<T, 2>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y));                                              \
+    }                                                                                                                \
+                                                                                                                     \
+    template <typename T>                                                                                            \
+    __both__ vec_t<T, 3> fct(const vec_t<T, 3> &a, const vec_t<T, 3> &b) {                                           \
+        return vec_t<T, 3>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y), scalarFunc(a.z, b.z));                        \
+    }                                                                                                                \
+                                                                                                                     \
+    template <typename T1, typename T2>                                                                              \
+    __both__ vec_t<typename BinaryOpResultType<T1, T2>::type, 3> fct(const vec_t<T1, 3> &a, const vec_t<T2, 3> &b) { \
+        return vec_t<typename BinaryOpResultType<T1, T2>::type, 3>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y),       \
+                                                                   scalarFunc(a.z, b.z));                            \
+    }                                                                                                                \
+                                                                                                                     \
+    template <typename T>                                                                                            \
+    __both__ vec_t<T, 4> fct(const vec_t<T, 4> &a, const vec_t<T, 4> &b) {                                           \
+        return vec_t<T, 4>(scalarFunc(a.x, b.x), scalarFunc(a.y, b.y), scalarFunc(a.z, b.z), scalarFunc(a.w, b.w));  \
     }
 
     // clang-format off
@@ -487,7 +491,7 @@ _define_binary_functor(max, std::max)
         return vec_t<T, 4>(op v.x, op v.y, op v.z, op v.w);         \
     }
 
-        _define_unary_op(+);
+            _define_unary_op(+);
 _define_unary_op(-);
 
 // -------------------------------------------------------
@@ -513,34 +517,34 @@ _define_unary_op(-);
                                                                                                            \
     /* vec op scalar */                                                                                    \
     template <typename T>                                                                                  \
-    inline __both__ vec_t<T, 2> operator op(const vec_t<T, 2> &a, const T &b) {                            \
+    inline __both__ vec_t<T, 2> operator op(const vec_t<T, 2> &a, const T & b) {                           \
         return vec_t<T, 2>(a.x op b, a.y op b);                                                            \
     }                                                                                                      \
                                                                                                            \
     template <typename T1, typename T2>                                                                    \
     inline __both__ vec_t<typename BinaryOpResultType<T1, T2>::type, 3> operator op(const vec_t<T1, 3> &a, \
-                                                                                    const T2 &b) {         \
+                                                                                    const T2 & b) {        \
         return vec_t<typename BinaryOpResultType<T1, T2>::type, 3>(a.x op b, a.y op b, a.z op b);          \
     }                                                                                                      \
                                                                                                            \
     template <typename T>                                                                                  \
-    inline __both__ vec_t<T, 4> operator op(const vec_t<T, 4> &a, const T &b) {                            \
+    inline __both__ vec_t<T, 4> operator op(const vec_t<T, 4> &a, const T & b) {                           \
         return vec_t<T, 4>(a.x op b, a.y op b, a.z op b, a.w op b);                                        \
     }                                                                                                      \
                                                                                                            \
     /* scalar op vec */                                                                                    \
     template <typename T>                                                                                  \
-    inline __both__ vec_t<T, 2> operator op(const T &a, const vec_t<T, 2> &b) {                            \
+    inline __both__ vec_t<T, 2> operator op(const T & a, const vec_t<T, 2> &b) {                           \
         return vec_t<T, 2>(a op b.x, a op b.y);                                                            \
     }                                                                                                      \
                                                                                                            \
     template <typename T>                                                                                  \
-    inline __both__ vec_t<T, 3> operator op(const T &a, const vec_t<T, 3> &b) {                            \
+    inline __both__ vec_t<T, 3> operator op(const T & a, const vec_t<T, 3> &b) {                           \
         return vec_t<T, 3>(a op b.x, a op b.y, a op b.z);                                                  \
     }                                                                                                      \
                                                                                                            \
     template <typename T>                                                                                  \
-    inline __both__ vec_t<T, 4> operator op(const T &a, const vec_t<T, 4> &b) {                            \
+    inline __both__ vec_t<T, 4> operator op(const T & a, const vec_t<T, 4> &b) {                           \
         return vec_t<T, 4>(a op b.x, a op b.y, a op b.z, a op b.w);                                        \
     }
 
@@ -579,43 +583,43 @@ _define_compare_operator(!=);
 // assign operators
 // -------------------------------------------------------
 
-#define _define_assign_operator(op)                                                    \
-    /* vec op vec */                                                                   \
-    template <typename T>                                                              \
-    inline __both__ vec_t<T, 2> &vec_t<T, 2>::operator op## = (const vec_t<T, 2> &o) { \
-        *this = *this op o;                                                            \
-        return *this;                                                                  \
-    }                                                                                  \
-                                                                                       \
-    template <typename T>                                                              \
-    inline __both__ vec_t<T, 3> &vec_t<T, 3>::operator op## = (const vec_t<T, 3> &o) { \
-        *this = *this op o;                                                            \
-        return *this;                                                                  \
-    }                                                                                  \
-                                                                                       \
-    template <typename T>                                                              \
-    inline __both__ vec_t<T, 4> &vec_t<T, 4>::operator op## = (const vec_t<T, 4> &o) { \
-        *this = *this op o;                                                            \
-        return *this;                                                                  \
-    }                                                                                  \
-                                                                                       \
-    /* vec op scalar */                                                                \
-    template <typename T>                                                              \
-    inline __both__ vec_t<T, 2> &vec_t<T, 2>::operator op## = (const T &o) {           \
-        *this = *this op o;                                                            \
-        return *this;                                                                  \
-    }                                                                                  \
-                                                                                       \
-    template <typename T>                                                              \
-    inline __both__ vec_t<T, 3> &vec_t<T, 3>::operator op## = (const T &o) {           \
-        *this = *this op o;                                                            \
-        return *this;                                                                  \
-    }                                                                                  \
-                                                                                       \
-    template <typename T>                                                              \
-    inline __both__ vec_t<T, 4> &vec_t<T, 4>::operator op## = (const T &o) {           \
-        *this = *this op o;                                                            \
-        return *this;                                                                  \
+#define _define_assign_operator(op)                                                  \
+    /* vec op vec */                                                                 \
+    template <typename T>                                                            \
+    inline __both__ vec_t<T, 2> &vec_t<T, 2>::operator op##=(const vec_t<T, 2> &o) { \
+        *this = *this op o;                                                          \
+        return *this;                                                                \
+    }                                                                                \
+                                                                                     \
+    template <typename T>                                                            \
+    inline __both__ vec_t<T, 3> &vec_t<T, 3>::operator op##=(const vec_t<T, 3> &o) { \
+        *this = *this op o;                                                          \
+        return *this;                                                                \
+    }                                                                                \
+                                                                                     \
+    template <typename T>                                                            \
+    inline __both__ vec_t<T, 4> &vec_t<T, 4>::operator op##=(const vec_t<T, 4> &o) { \
+        *this = *this op o;                                                          \
+        return *this;                                                                \
+    }                                                                                \
+                                                                                     \
+    /* vec op scalar */                                                              \
+    template <typename T>                                                            \
+    inline __both__ vec_t<T, 2> &vec_t<T, 2>::operator op##=(const T & o) {          \
+        *this = *this op o;                                                          \
+        return *this;                                                                \
+    }                                                                                \
+                                                                                     \
+    template <typename T>                                                            \
+    inline __both__ vec_t<T, 3> &vec_t<T, 3>::operator op##=(const T & o) {          \
+        *this = *this op o;                                                          \
+        return *this;                                                                \
+    }                                                                                \
+                                                                                     \
+    template <typename T>                                                            \
+    inline __both__ vec_t<T, 4> &vec_t<T, 4>::operator op##=(const T & o) {          \
+        *this = *this op o;                                                          \
+        return *this;                                                                \
     }
 
 _define_assign_operator(*);
