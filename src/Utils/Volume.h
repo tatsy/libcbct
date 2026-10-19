@@ -42,10 +42,12 @@ public:
 
     Volume(const Volume<T> &other)
         : Volume(other.shape_[0], other.shape_[1], other.shape_[2]) {
-        std::memcpy(data_.get(), other.data_.get(), sizeof(T) * other.numel());
+        if (!other.empty()) {
+            std::memcpy(data_.get(), other.data_.get(), sizeof(T) * other.numel());
+        }
     }
 
-    Volume(Volume<T> &&other)
+    Volume(Volume<T> &&other) noexcept
         : shape_{ std::exchange(other.shape_, {}) }
         , data_{ std::move(other.data_) } {
     }
@@ -67,7 +69,7 @@ public:
         return *this;
     }
 
-    Volume &operator=(Volume<T> &&other) {
+    Volume &operator=(Volume<T> &&other) noexcept {
         if (this == &other) {
             return *this;
         }
@@ -171,14 +173,14 @@ public:
             buf[z] = init;
             for (int y = 0; y < (int)shape_[1]; y++) {
                 for (int x = 0; x < (int)shape_[0]; x++) {
-                    buf[z] = std::invoke(func, buf[z], static_cast<T>((*this)(x, y, z)));
+                    buf[z] = std::invoke(func, static_cast<T>(buf[z]), static_cast<T>((*this)(x, y, z)));
                 }
             }
         }
 
         T ret = init;
         for (int z = 0; z < (int)shape_[2]; z++) {
-            ret = std::invoke(func, ret, buf[z]);
+            ret = std::invoke(func, static_cast<T>(ret), static_cast<T>(buf[z]));
         }
 
         return ret;

@@ -9,6 +9,7 @@
 #include <concepts>
 #include <charconv>
 #include <type_traits>
+#include <string_view>
 
 #include "Common/Exception.h"
 

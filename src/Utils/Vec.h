@@ -10,6 +10,8 @@
 #include <cstdint>
 #include <array>
 #include <algorithm>
+#include <concepts>
+#include <charconv>
 #include <type_traits>
 
 #ifdef __CUDACC__
@@ -35,41 +37,41 @@ struct BinaryOpResultType {
 
 template <typename ScalarType>
 struct BinaryOpResultType<ScalarType, ScalarType> {
-    typedef ScalarType type;
+    using type = ScalarType;
 };
 
 template <>
 struct BinaryOpResultType<int, float> {
-    typedef float type;
+    using type = float;
 };
 template <>
 struct BinaryOpResultType<float, int> {
-    typedef float type;
+    using type = float;
 };
 template <>
 struct BinaryOpResultType<unsigned int, float> {
-    typedef float type;
+    using type = float;
 };
 template <>
 struct BinaryOpResultType<float, unsigned int> {
-    typedef float type;
+    using type = float;
 };
 
 template <>
 struct BinaryOpResultType<int, double> {
-    typedef double type;
+    using type = double;
 };
 template <>
 struct BinaryOpResultType<double, int> {
-    typedef double type;
+    using type = double;
 };
 template <>
 struct BinaryOpResultType<unsigned int, double> {
-    typedef double type;
+    using type = double;
 };
 template <>
 struct BinaryOpResultType<double, unsigned int> {
-    typedef double type;
+    using type = double;
 };
 
 template <std::integral T>
@@ -150,17 +152,7 @@ struct vec_t<T, 2> {
         }
     }
 
-    union {
-        struct {
-            T x, y;
-        };
-        struct {
-            T s, t;
-        };
-        struct {
-            T u, v;
-        };
-    };
+    T x, y;
 };
 
 // -----------------------------------------------------------------------------
@@ -247,17 +239,7 @@ struct vec_t<T, 3> {
         }
     }
 
-    union {
-        struct {
-            T x, y, z;
-        };
-        struct {
-            T r, g, b;
-        };
-        struct {
-            T u, v, w;
-        };
-    };
+    T x, y, z;
 };
 
 // -----------------------------------------------------------------------------
@@ -360,14 +342,7 @@ struct vec_t<T, 4> {
         }
     }
 
-    union {
-        struct {
-            T x, y, z, w;
-        };
-        struct {
-            T r, g, b, a;
-        };
-    };
+    T x, y, z, w;
 };
 
 // -------------------------------------------------------
@@ -391,6 +366,21 @@ _define_vec_types(float, f);
 _define_vec_types(double, d);
 
 #undef _define_vec_types
+
+static_assert(std::is_standard_layout_v<libcbct::vec2f>);
+static_assert(std::is_trivially_copyable_v<libcbct::vec2f>);
+static_assert(sizeof(libcbct::vec2f) == 2 * sizeof(float));
+static_assert(alignof(libcbct::vec2f) == alignof(float));
+
+static_assert(std::is_standard_layout_v<libcbct::vec3f>);
+static_assert(std::is_trivially_copyable_v<libcbct::vec3f>);
+static_assert(sizeof(libcbct::vec3f) == 3 * sizeof(float));
+static_assert(alignof(libcbct::vec3f) == alignof(float));
+
+static_assert(std::is_standard_layout_v<libcbct::vec4f>);
+static_assert(std::is_trivially_copyable_v<libcbct::vec4f>);
+static_assert(sizeof(libcbct::vec4f) == 4 * sizeof(float));
+static_assert(alignof(libcbct::vec4f) == alignof(float));
 
 // -------------------------------------------------------
 // unary functors

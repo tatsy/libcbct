@@ -5,7 +5,9 @@
 #ifndef SETTINGS_IMPORTER_BASE_H
 #define SETTINGS_IMPORTER_BASE_H
 
+#include <cstdlib>
 #include <string>
+#include <cerrno>
 #include <unordered_map>
 
 #include "Common/Api.h"
