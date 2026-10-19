@@ -1,3 +1,7 @@
+.venv
+*.py[cod]
+__pycache__
+
 data/*
 build/*
 CMakeUserPresets.json

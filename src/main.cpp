@@ -182,9 +182,11 @@ int run(int argc, char **argv) {
 
     // Preview
     if (configs.count("no-preview")) return 0;
+
+    int initPos = volSize / 2;
     cv::namedWindow("volume", cv::WINDOW_AUTOSIZE);
-    cv::createTrackbar("#slice", "volume", nullptr, volSize - 1, onTrackbar, &tomogram);
-    onTrackbar(volSize / 2, &tomogram);
+    cv::createTrackbar("#slice", "volume", &initPos, volSize - 1, onTrackbar, &tomogram);
+    onTrackbar(initPos, &tomogram);
 
     cv::waitKey(0);
     cv::destroyAllWindows();
@@ -192,7 +194,7 @@ int run(int argc, char **argv) {
     return 0;
 }
 
-}  // namespace
+}  // anonymous namespace
 
 int main(int argc, char **argv) {
     try {
