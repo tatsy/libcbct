@@ -103,7 +103,7 @@ Library-owned C++ types, functions, and constants are defined in `libcbct`:
 namespace cbct = libcbct;
 
 cbct::VolumeF32 reconstruct(const cbct::VolumeF32 &sinogram, const cbct::Geometry &geometry) {
-    return cbct::FeldkampCpu(cbct::RampFilter::SheppLogan).reconstruct(sinogram, geometry);
+    return cbct::Feldkamp(cbct::Backend::Cpu, cbct::RampFilter::SheppLogan).reconstruct(sinogram, geometry);
 }
 ```
 
@@ -123,6 +123,66 @@ descriptive assertion message when useful.
 Use the existing `libcbct::kPi`, `kHalfPi`, `kTwoPi`, `kFourPi`, `kOneOverPi`,
 `kOneOverTwoPi`, and `kOneOverFourPi` APIs for mathematical constants. Their
 implementation uses `<numbers>` while retaining float/double conversions.
+
+### Operator-based CPU reconstruction
+
+`Feldkamp(Backend::Cpu, filter)` composes reusable weighting/padding, projection
+filtering, and FDK backprojection operators. The existing `FeldkampCpu` remains
+an independent comparison implementation; the existing CUDA/Vulkan classes and
+CLI selection retain their behavior during this migration.
+
+`FeldkampOptions` supplies a default `backend` and optional `weightBackend`,
+`filterBackend`, and `backprojectionBackend` overrides, plus `filter`. Only CPU
+operators are implemented in this stage. Unsupported selections throw
+`InvalidArgument` at construction, including GPU selections in GPU-enabled builds;
+there is no silent fallback. Detector dimensions must match the sinogram, both
+must be at least two, and the input must contain at least one projection.
+
+The lower-level API in `Reconstruction/CpuOperators.h` can also be composed directly:
+
+```cpp
+cbct::CpuExecutionSession session;
+cbct::CpuWeightAndPad weight(session, geometry);
+cbct::CpuProjectionFilter filter(session, geometry, cbct::RampFilter::SheppLogan);
+cbct::CpuFdkBackprojection back(session, geometry);
+const auto width = static_cast<std::size_t>(geometry.detSize.x);
+const auto height = static_cast<std::size_t>(geometry.detSize.y);
+auto padded = session.allocate<float>(std::array{weight.paddedWidth(), height});
+auto filtered = session.allocate<float>(std::array{width, height});
+cbct::VolumeF32 volume(geometry.volSize.x, geometry.volSize.y, geometry.volSize.z);
+
+weight.apply(session.borrow(sinogram).slice(0), padded);
+filter.apply(padded, filtered);
+back.accumulate(filtered, session.borrow(volume), 0.0f,
+                static_cast<float>(cbct::kPi) / sinogram.size<2>());
+```
+
+This example processes the first view only; `Feldkamp` runs the full ordered loop.
+Typed views record shape, scalar type, x-contiguous layout, and context identity.
+Owned views retain their allocation and context. Borrowed host views require the
+caller to keep the original allocation alive and stable. Operators reject shape,
+context, and input/output overlap errors before writing caller buffers, including
+in Release builds. No copying or caching of mutable borrowed inputs occurs.
+
+Weighting overwrites the entire padded output. Filtering overwrites the padded
+input with the normalized inverse FFT and overwrites the cropped output.
+Backprojection **adds** to the existing volume, includes the FDK distance weight,
+and takes an explicit angle in radians and scale; it is not an adjoint projector.
+`CpuRealFft`, `CpuSpectralMultiply`, and `CpuCrop` are independently reusable
+filtering components. The FFT exposes a natural complex half-spectrum and a
+normalized inverse; power-of-two lengths of at least two are supported.
+
+Every `Feldkamp::reconstruct()` creates its own session, so independent calls can
+run concurrently. Within a call, coefficients, buffers, and the FFT plan are
+reused across views. A lower-level session and its mutable FFT/filter workspace
+must not be used concurrently. CPU execution is synchronous and requires no
+host/device transfers. Session statistics count explicit owned buffers, excluding
+borrowed output/input, FFT plan storage, and native FFT scratch allocations.
+The pocketfft adapter retains its plan and SIMD packing workspace but pocketfft
+still allocates transient internal scratch during transforms.
+
+See the [CPU operator comparison](docs/benchmarks/cpu-operator-transition.md) for
+numerical, timing, and allocation measurements.
 
 ### Vulkan backend
 

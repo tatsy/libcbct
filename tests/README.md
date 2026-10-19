@@ -2,15 +2,15 @@
 
 ## FDK operator migration baseline
 
-`test_fdk_contracts.cpp` establishes numerical contracts before extracting the
-CPU operators. Run it with:
+`test_fdk_contracts.cpp` runs the numerical contracts on both the preserved
+`FeldkampCpu` and the new `Feldkamp(Backend::Cpu)` implementation. Run it with:
 
 ```sh
 cmake --build build/cpu --config Release --parallel
 ctest --test-dir build/cpu -C Release -R 'FdkContracts|FdkSamplingContracts' --output-on-failure
 ```
 
-The tests call the existing production APIs (`FeldkampCpu`, `makeRampResponse`,
+The tests call the production APIs (`FeldkampCpu`, `Feldkamp`, `makeRampResponse`,
 `makeCosineWeights`, and `bilerp`). `FdkReference.h` supplies a small double-precision
 oracle based on direct spatial convolution and explicit geometric formulas. It
 does not call the production FFT, filter, projection, or interpolation helpers.
@@ -36,14 +36,22 @@ Both ramp filters are covered. The tests check:
 - Additive contributions with projection slots retained, including zero views
   after nonzero views, and repeat calls with changed dimensions and geometry.
 
-This is a baseline for the existing API, not a test implementation of the new
-operator API. Once those interfaces exist, add direct tests for padded-buffer
-overwrite, explicit backprojection into a nonzero destination, FFT round trips,
-shape/alias/context validation before writes, and session workspace reuse. The
-current whole-reconstruction tests cannot prove these intermediate-buffer or
-resource-lifetime contracts. Do not add placeholder tests that pass without
-calling production code. GPU/mixed-backend execution and forward/adjoint
+`test_cpu_operators.cpp` directly exercises padded-buffer overwrite, explicit
+backprojection into a nonzero destination, independent DFT and normalized FFT
+round trips (including SIMD tails), spectral multiplication, cropping,
+shape/alias/context validation before writes, owned-view lifetimes, borrowed input
+updates, and reuse of session buffers. `test_fdk.cpp` compares both filters on the
+established sphere phantom and checks physical attenuation as well as maximum
+absolute error below `1e-6`. GPU/mixed-backend execution and forward/adjoint
 inner-product tests remain separate stages of the migration.
+
+```sh
+ctest --test-dir build/cpu -C Release -R 'CpuExecution|CpuWeightAndPad|CpuRealFft|CpuSpectralMultiply|CpuCrop|CpuProjectionFilterTest|CpuFdkBackprojection|FeldkampInput|OperatorRecipe' --output-on-failure
+```
+
+The opt-in `cbct_fdk_cpu_benchmark` target compares complete reconstructions and
+ordinary C++ allocation requests without adding timing thresholds to CTest.
+See [measurement instructions and results](../docs/benchmarks/cpu-operator-transition.md).
 
 ## Utility test workflow
 

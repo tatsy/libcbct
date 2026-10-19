@@ -23,6 +23,7 @@ add_executable(cbct_tests
   test_projection_sequence.cpp
   test_fdk.cpp
   test_fdk_contracts.cpp
+  test_cpu_operators.cpp
   test_vec.cpp
   test_checked_size.cpp
   test_parse_number.cpp
@@ -31,6 +32,10 @@ add_executable(cbct_tests
 
 target_include_directories(cbct_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(cbct_tests PRIVATE ${LIBCBCT} GTest::gtest_main opencv_core opencv_imgcodecs)
+
+# Opt-in measurement tool; timing is intentionally not a pass/fail unit test.
+add_executable(cbct_fdk_cpu_benchmark EXCLUDE_FROM_ALL benchmark_fdk_cpu.cpp)
+target_link_libraries(cbct_fdk_cpu_benchmark PRIVATE ${LIBCBCT})
 
 # Compile API contracts on demand so an ill-formed API does not block runtime tests.
 # These are positive tests: both compilation and execution must succeed.

@@ -15,6 +15,12 @@ set(LIBCBCT_HEADERS
   IO/ImageSequenceImporter.h
   IO/RawVolumeExporter.h
   Reconstruction/FeldkampCpu.h
+  Reconstruction/Feldkamp.h
+  Reconstruction/Execution.h
+  Reconstruction/Operators.h
+  Reconstruction/CpuOperators.h
+  Reconstruction/detail/FdkRecipe.h
+  Reconstruction/detail/FdkValidation.h
   Reconstruction/FilterUtils.h
   Reconstruction/ReconstructionBase.h
   Reconstruction/pocketfft_hdronly.h
@@ -33,6 +39,8 @@ set(LIBCBCT_SOURCES
   IO/ImageSequenceImporter.cpp
   IO/RawVolumeExporter.cpp
   Reconstruction/FeldkampCpu.cpp
+  Reconstruction/Feldkamp.cpp
+  Reconstruction/CpuOperators.cpp
   Reconstruction/FilterUtils.cpp
   Settings/JsonSettingImporter.cpp
 )

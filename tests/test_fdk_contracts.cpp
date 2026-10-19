@@ -4,9 +4,12 @@
 #include <cmath>
 #include <complex>
 #include <vector>
+#include <memory>
+#include <tuple>
 
 #include "FdkReference.h"
 #include "Reconstruction/FeldkampCpu.h"
+#include "Reconstruction/Feldkamp.h"
 #include "Reconstruction/FilterUtils.h"
 #include "Utils/ImageUtils.h"
 
@@ -43,19 +46,26 @@ VolumeF32 asymmetricInput(int width, int height, int count) {
     return input;
 }
 
-class FdkContracts : public ::testing::TestWithParam<RampFilter> {};
+class FdkContracts : public ::testing::TestWithParam<std::tuple<RampFilter, bool>> {
+protected:
+    RampFilter filter() const { return std::get<0>(GetParam()); }
+    std::unique_ptr<ReconstructionBase> makeReconstruction() const {
+        if (std::get<1>(GetParam())) return std::make_unique<Feldkamp>(Backend::Cpu, filter());
+        return std::make_unique<FeldkampCpu>(filter());
+    }
+};
 
 TEST_P(FdkContracts, RampResponseMatchesDirectDftWithoutInverseNormalization) {
     for (const int length : { 4, 16, 64 }) {
         for (const double pitch : { 0.2, 0.75 }) {
-            const auto actual = makeRampResponse(length, pitch, GetParam());
+            const auto actual = makeRampResponse(length, pitch, filter());
             ASSERT_EQ(actual.size(), static_cast<std::size_t>(length / 2 + 1));
             for (int k = 0; k <= length / 2; ++k) {
                 std::complex<double> expected{};
                 for (int j = 0; j < length; ++j) {
                     const int offset = j <= length / 2 ? j : j - length;
                     const double angle = -static_cast<double>(kTwoPi) * j * k / length;
-                    expected += reference::rampKernel(offset, pitch, GetParam())
+                    expected += reference::rampKernel(offset, pitch, filter())
                                 * std::complex<double>(std::cos(angle), std::sin(angle));
                 }
                 EXPECT_NEAR(expected.imag(), 0.0, 1e-12);
@@ -97,9 +107,10 @@ TEST_P(FdkContracts, RectangularDetectorMatchesDirectConvolutionReference) {
     const Geometry geometry(vec2i(17, 19), vec2f(0.8f, 1.1f), vec3i(17, 19, 5), 100.0f, 400.0f);
     const auto input = asymmetricInput(17, 19, 7);
     const auto original = input;
-    const auto expected = reference::reconstruct(input, geometry, GetParam());
-    const auto actual = FeldkampCpu(GetParam()).reconstruct(input, geometry);
+    const auto expected = reference::reconstruct(input, geometry, filter());
+    const auto actual = makeReconstruction()->reconstruct(input, geometry);
     expectVolumeNear(actual, expected);
+    expectVolumeNear(actual, FeldkampCpu(filter()).reconstruct(input, geometry));
     EXPECT_TRUE(std::equal(input.elements().begin(), input.elements().end(), original.elements().begin()));
 }
 
@@ -110,8 +121,8 @@ TEST_P(FdkContracts, EdgeImpulsesPreserveZeroExtensionAndRowIsolation) {
         VolumeF32 input(5, 3, 1);
         input(column, 0, 0) = 0.2f;
         input(4 - column, 2, 0) = -0.1f;
-        expectVolumeNear(FeldkampCpu(GetParam()).reconstruct(input, geometry),
-                         reference::reconstruct(input, geometry, GetParam()));
+        expectVolumeNear(makeReconstruction()->reconstruct(input, geometry),
+                         reference::reconstruct(input, geometry, filter()));
     }
 }
 
@@ -120,13 +131,13 @@ TEST_P(FdkContracts, IsocenterHasAnalyticScaleIndependentOfProjectionCount) {
     const double pi = static_cast<double>(kPi);
     const double weight = 400.0 / std::sqrt(400.0 * 400.0 + 0.5);
     // dp=1/4. Each two-pixel row contributes h[0]+h[1] at the isocenter.
-    const double kernelSum = GetParam() == RampFilter::RamLak ? 1.0 - 4.0 / (pi * pi)
+    const double kernelSum = filter() == RampFilter::RamLak ? 1.0 - 4.0 / (pi * pi)
                                                              : 16.0 / (3.0 * pi * pi);
     for (const int count : { 1, 2, 7 }) {
         SCOPED_TRACE(count);
         VolumeF32 input(2, 2, count);
         std::fill(input.elements().begin(), input.elements().end(), 0.02f);
-        const auto actual = FeldkampCpu(GetParam()).reconstruct(input, geometry);
+        const auto actual = makeReconstruction()->reconstruct(input, geometry);
         EXPECT_NEAR(actual(0, 0, 0), static_cast<double>(0.02f) * weight * kernelSum * pi, 1e-6);
     }
 }
@@ -138,8 +149,8 @@ TEST_P(FdkContracts, BackprojectionIncludesLowerEdgeAndExcludesUpperEdge) {
     VolumeF32 input(2, 2, 1);
     input(0, 0, 0) = input(1, 0, 0) = 0.02f;
     input(0, 1, 0) = input(1, 1, 0) = 0.06f;
-    const auto actual = FeldkampCpu(GetParam()).reconstruct(input, geometry);
-    const auto filtered = reference::filteredProjection(input, geometry, 0, GetParam());
+    const auto actual = makeReconstruction()->reconstruct(input, geometry);
+    const auto filtered = reference::filteredProjection(input, geometry, 0, filter());
     const double lowerRow = (filtered[0] + filtered[1]) * 0.5;
     const double upperRow = (filtered[2] + filtered[3]) * 0.5;
     const double pi = static_cast<double>(kPi);
@@ -154,7 +165,7 @@ TEST_P(FdkContracts, BackprojectionIncludesLowerEdgeAndExcludesUpperEdge) {
 TEST_P(FdkContracts, ProjectionContributionsAccumulateAtTheirOriginalAngles) {
     const Geometry geometry(vec2i(5, 3), vec2f(0.9f, 1.2f), vec3i(5, 7, 3), 100.0f, 400.0f);
     const auto input = asymmetricInput(5, 3, 7);
-    const FeldkampCpu fdk(GetParam());
+    const auto fdk = makeReconstruction();
     VolumeF32 sum(5, 7, 3);
     // Keep all seven slots: a one-frame sinogram would change theta and pi/N.
     for (int p = 0; p < 7; ++p) {
@@ -162,32 +173,36 @@ TEST_P(FdkContracts, ProjectionContributionsAccumulateAtTheirOriginalAngles) {
         for (int y = 0; y < 3; ++y) {
             for (int x = 0; x < 5; ++x) isolated(x, y, p) = input(x, y, p);
         }
-        const auto contribution = fdk.reconstruct(isolated, geometry);
+        const auto contribution = fdk->reconstruct(isolated, geometry);
         for (std::size_t i = 0; i < sum.numel(); ++i) sum.ptr()[i] += contribution.ptr()[i];
     }
-    const auto actual = fdk.reconstruct(input, geometry);
+    const auto actual = fdk->reconstruct(input, geometry);
     expectVolumeNear(actual, sum);
-    expectVolumeNear(actual, reference::reconstruct(input, geometry, GetParam()));
+    expectVolumeNear(actual, reference::reconstruct(input, geometry, filter()));
 }
 
 TEST_P(FdkContracts, RepeatedCallsAndZeroFramesDoNotReuseStaleData) {
-    const FeldkampCpu fdk(GetParam());
+    const auto fdk = makeReconstruction();
     const Geometry geometry(vec2i(5, 3), vec2f(1.0f, 0.7f), vec3i(5, 5, 3), 100.0f, 400.0f);
     const auto input = asymmetricInput(5, 3, 7);
-    const auto first = fdk.reconstruct(input, geometry);
-    expectVolumeNear(first, reference::reconstruct(input, geometry, GetParam()));
-    const auto zero = fdk.reconstruct(VolumeF32(5, 3, 7), geometry);
+    const auto first = fdk->reconstruct(input, geometry);
+    expectVolumeNear(first, reference::reconstruct(input, geometry, filter()));
+    const auto zero = fdk->reconstruct(VolumeF32(5, 3, 7), geometry);
     for (const float value : zero.elements()) EXPECT_EQ(value, 0.0f);
 
     // Change both geometry and buffer shapes before returning to the first case.
     const Geometry other(vec2i(2, 4), vec2f(0.7f, 1.4f), vec3i(3, 3, 5), 80.0f, 300.0f);
     const auto otherInput = asymmetricInput(2, 4, 3);
-    expectVolumeNear(fdk.reconstruct(otherInput, other), reference::reconstruct(otherInput, other, GetParam()));
-    expectVolumeNear(fdk.reconstruct(input, geometry), first);
+    expectVolumeNear(fdk->reconstruct(otherInput, other), reference::reconstruct(otherInput, other, filter()));
+    expectVolumeNear(fdk->reconstruct(input, geometry), first);
 }
 
-INSTANTIATE_TEST_SUITE_P(Filters, FdkContracts, ::testing::Values(RampFilter::RamLak, RampFilter::SheppLogan),
-                         [](const auto &info) { return info.param == RampFilter::RamLak ? "RamLak" : "SheppLogan"; });
+INSTANTIATE_TEST_SUITE_P(Filters, FdkContracts,
+    ::testing::Combine(::testing::Values(RampFilter::RamLak, RampFilter::SheppLogan), ::testing::Bool()),
+    [](const auto &info) {
+        return std::string(std::get<0>(info.param) == RampFilter::RamLak ? "RamLak" : "SheppLogan")
+               + (std::get<1>(info.param) ? "Operators" : "Legacy");
+    });
 
 }  // namespace
 }  // namespace libcbct::tests

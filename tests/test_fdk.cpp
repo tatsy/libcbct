@@ -2,6 +2,7 @@
 
 #include "Phantom.h"
 #include "Reconstruction/FeldkampCpu.h"
+#include "Reconstruction/Feldkamp.h"
 
 #if defined(LIBCBCT_WITH_CUDA)
 #include <cuda_runtime.h>
@@ -31,6 +32,22 @@ TEST_P(FeldkampCpuTest, ReconstructsSphereAttenuation) {
 
     EXPECT_NEAR(meanInsideSphere(vol, setup, kSpheres[0]), 0.02, 0.02 * 0.01);  // 1% on the central plane
     EXPECT_NEAR(meanInsideSphere(vol, setup, kSpheres[1]), 0.02, 0.02 * 0.05);  // 5% off the central plane
+}
+
+TEST_P(FeldkampCpuTest, OperatorRecipeMatchesLegacySphereReconstruction) {
+    const PhantomSetup setup;
+    const auto sino = makeSphereSinogram(setup, kSpheres);
+    const auto legacy = FeldkampCpu(GetParam()).reconstruct(sino, setup.geometry());
+    const auto actual = Feldkamp(Backend::Cpu, GetParam()).reconstruct(sino, setup.geometry());
+    ASSERT_EQ(actual.numel(), legacy.numel());
+    double maximum = 0.0;
+    for (std::size_t i = 0; i < actual.numel(); ++i) {
+        ASSERT_TRUE(std::isfinite(actual.ptr()[i]));
+        maximum = std::max(maximum, std::abs(static_cast<double>(actual.ptr()[i]) - legacy.ptr()[i]));
+    }
+    EXPECT_LT(maximum, 1e-6);
+    EXPECT_NEAR(meanInsideSphere(actual, setup, kSpheres[0]), 0.02, 0.02 * 0.01);
+    EXPECT_NEAR(meanInsideSphere(actual, setup, kSpheres[1]), 0.02, 0.02 * 0.05);
 }
 
 INSTANTIATE_TEST_SUITE_P(Filters, FeldkampCpuTest, ::testing::Values(RampFilter::RamLak, RampFilter::SheppLogan),

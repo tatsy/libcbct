@@ -20,6 +20,8 @@
 
 #include "Reconstruction/ReconstructionBase.h"
 #include "Reconstruction/FeldkampCpu.h"
+#include "Reconstruction/Feldkamp.h"
+#include "Reconstruction/CpuOperators.h"
 
 #if defined(LIBCBCT_WITH_CUDA)
 #include "Reconstruction/FeldkampCuda.h"
