@@ -94,4 +94,55 @@ public:
     }
 };
 
+namespace detail {
+
+class CudaContextScope final {
+public:
+    explicit CudaContextScope(CUcontext context) {
+        if (!context) {
+            throw InvalidArgument("CUDA context must not be null");
+        }
+
+        checkDriver(cuCtxPushCurrent(context), "cuCtxPushCurrent");
+    }
+
+    ~CudaContextScope() {
+        CUcontext popped = nullptr;
+        checkDriver(cuCtxPopCurrent(&popped), "cuCtxPopCurrent");
+    }
+
+    CudaContextScope(const CudaContextScope &) = delete;
+    CudaContextScope &operator=(const CudaContextScope &) = delete;
+};
+
+CudaBufferStorage::CudaBufferStorage(ExecutionContext context, std::shared_ptr<CudaDeviceState> device,
+                                     std::size_t sizeBytes)
+    : BufferStorage(std::move(context), sizeBytes)
+    , device_(std::move(device)) {
+    if (this->context().backend() != Backend::Cuda) {
+        throw InvalidArgument("CUDA storage requires a CUDA execution context");
+    }
+
+    if (!device_ || !device_->context()) {
+        throw InvalidArgument("CUDA storage requires a valid device state");
+    }
+
+    if (!sizeBytes || sizeBytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
+        throw InvalidArgument("CUDA storage size must be positive and addressable");
+    }
+
+    CudaContextScope scope(device_->context());
+    checkDriver(cuMemAlloc(&address_, sizeBytes), "cuMemAlloc");
+}
+
+CudaBufferStorage::~CudaBufferStorage() noexcept {
+    if (address_ && cuCtxPushCurrent(device_->context()) == CUDA_SUCCESS) {
+        cuMemFree(address_);
+        CUcontext popped = nullptr;
+        cuCtxPopCurrent(&popped);
+    }
+}
+
+}  // namespace detail
+
 }  // namespace libcbct
