@@ -298,8 +298,8 @@ TEST(FeldkampInput, RejectsInvalidShapesGeometryFiltersAndUnavailableOperators) 
     EXPECT_THROW(fdk.reconstruct(VolumeF32(), geometry), InvalidArgument);
     EXPECT_THROW(Feldkamp(Backend::Cpu, static_cast<RampFilter>(99)), InvalidArgument);
     EXPECT_THROW(Feldkamp(static_cast<Backend>(99)), InvalidArgument);
-    EXPECT_THROW(Feldkamp(Backend::Cuda), InvalidArgument);
-    EXPECT_THROW(Feldkamp(Backend::Vulkan), InvalidArgument);
+    EXPECT_THROW((void)Feldkamp{Backend::Cuda}, InvalidArgument);
+    EXPECT_THROW((void)Feldkamp{Backend::Vulkan}, InvalidArgument);
     FeldkampOptions options;
     options.filterBackend = Backend::Cuda;
     EXPECT_THROW(Feldkamp{options}, InvalidArgument);
