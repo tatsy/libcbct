@@ -44,7 +44,9 @@ vk::UniqueInstance createInstance() {
 std::uint32_t computeFamily(vk::PhysicalDevice device) {
     const auto families = device.getQueueFamilyProperties();
     for (std::uint32_t i = 0; i < families.size(); ++i) {
-        if (families[i].queueCount && (families[i].queueFlags & vk::QueueFlagBits::eCompute)) return i;
+        if (families[i].queueCount && (families[i].queueFlags & vk::QueueFlagBits::eCompute)) {
+            return i;
+        }
     }
     return std::numeric_limits<std::uint32_t>::max();
 }
@@ -70,7 +72,9 @@ VulkanDeviceInfo describeDevice(vk::PhysicalDevice device, int index) {
 }
 
 void checkRange(std::size_t size, std::size_t offset, std::size_t bytes) {
-    if (offset > size || bytes > size - offset) throw InvalidArgument("Vulkan buffer access is out of range");
+    if (offset > size || bytes > size - offset) {
+        throw InvalidArgument("Vulkan buffer access is out of range");
+    }
 }
 
 }  // namespace
@@ -90,7 +94,9 @@ struct VulkanDeviceState {
 
     ~VulkanDeviceState() {
         // All resource/batch objects retain this state and are destroyed first.
-        if (allocator) vmaDestroyAllocator(allocator);
+        if (allocator) {
+            vmaDestroyAllocator(allocator);
+        }
     }
 };
 
@@ -102,7 +108,9 @@ struct VulkanBufferState {
     std::size_t bytes = 0;
 
     ~VulkanBufferState() {
-        if (buffer) vmaDestroyBuffer(device->allocator, buffer, allocation);
+        if (buffer) {
+            vmaDestroyBuffer(device->allocator, buffer, allocation);
+        }
     }
 };
 
@@ -134,13 +142,14 @@ struct VulkanBatchState {
             std::lock_guard lock(device->queueMutex);
             try {
                 device->device->waitIdle();
-            } catch (...) {
-            }
+            } catch (...) {}
         }
     }
 
     void requireRecording() const {
-        if (submitted) throw InvalidArgument("A Vulkan batch can only be submitted once");
+        if (submitted) {
+            throw InvalidArgument("A Vulkan batch can only be submitted once");
+        }
     }
 
     void barrier() const {
@@ -167,27 +176,38 @@ std::vector<VulkanDeviceInfo> VulkanComputeContext::availableDevices() {
 }
 
 VulkanComputeContext::VulkanComputeContext(int deviceIndex) {
-    if (deviceIndex < -1) throw InvalidArgument("Vulkan device index must be -1 or non-negative");
+    if (deviceIndex < -1) {
+        throw InvalidArgument("Vulkan device index must be -1 or non-negative");
+    }
     auto state = std::make_shared<detail::VulkanDeviceState>();
     state->instance = createInstance();
     const auto devices = state->instance->enumeratePhysicalDevices();
     int selected = -1;
     for (std::size_t i = 0; i < devices.size(); ++i) {
-        if (deviceIndex >= 0 && static_cast<int>(i) != deviceIndex) continue;
+        if (deviceIndex >= 0 && static_cast<int>(i) != deviceIndex) {
+            continue;
+        }
         const auto properties = devices[i].getProperties();
         if (properties.apiVersion < VK_API_VERSION_1_1
-            || computeFamily(devices[i]) == std::numeric_limits<std::uint32_t>::max())
+            || computeFamily(devices[i]) == std::numeric_limits<std::uint32_t>::max()) {
             continue;
+        }
         selected = static_cast<int>(i);
-        if (deviceIndex >= 0 || properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) break;
+        if (deviceIndex >= 0 || properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
+            break;
+        }
     }
-    if (selected < 0) throw VulkanUnavailable("No Vulkan 1.1 compute device matches the requested index");
+    if (selected < 0) {
+        throw VulkanUnavailable("No Vulkan 1.1 compute device matches the requested index");
+    }
     state->physical = devices[selected];
     state->properties = state->physical.getProperties();
     state->info = describeDevice(state->physical, selected);
     state->family = computeFamily(state->physical);
     std::vector<const char *> extensions;
-    if (hasExtension(state->physical, "VK_KHR_portability_subset")) extensions.push_back("VK_KHR_portability_subset");
+    if (hasExtension(state->physical, "VK_KHR_portability_subset")) {
+        extensions.push_back("VK_KHR_portability_subset");
+    }
     // Optional support is reported, but no FDK kernel requires FP32 atomics.
     const float priority = 1.0f;
     const vk::DeviceQueueCreateInfo queue({}, state->family, 1, &priority);
@@ -210,7 +230,9 @@ VulkanComputeContext::VulkanComputeContext(int deviceIndex) {
 }
 
 const VulkanDeviceInfo &VulkanComputeContext::deviceInfo() const {
-    if (!state_) throw InvalidArgument("Moved-from Vulkan context");
+    if (!state_) {
+        throw InvalidArgument("Moved-from Vulkan context");
+    }
     return state_->info;
 }
 
@@ -219,14 +241,20 @@ VulkanComputeBuffer::VulkanComputeBuffer(std::shared_ptr<detail::VulkanBufferSta
 }
 
 std::size_t VulkanComputeBuffer::size() const {
-    if (!state_) throw InvalidArgument("Moved-from Vulkan buffer");
+    if (!state_) {
+        throw InvalidArgument("Moved-from Vulkan buffer");
+    }
     return state_->bytes;
 }
 
 void VulkanComputeBuffer::write(std::span<const std::byte> data, std::size_t offset) const {
     checkRange(size(), offset, data.size());
-    if (!state_->mapped) throw InvalidArgument("Vulkan buffer is not host visible");
-    if (data.empty()) return;
+    if (!state_->mapped) {
+        throw InvalidArgument("Vulkan buffer is not host visible");
+    }
+    if (data.empty()) {
+        return;
+    }
     std::memcpy(static_cast<std::byte *>(state_->mapped) + offset, data.data(), data.size());
     checkVma(vmaFlushAllocation(state_->device->allocator, state_->allocation, offset, data.size()),
              "vmaFlushAllocation");
@@ -234,16 +262,24 @@ void VulkanComputeBuffer::write(std::span<const std::byte> data, std::size_t off
 
 void VulkanComputeBuffer::read(std::span<std::byte> data, std::size_t offset) const {
     checkRange(size(), offset, data.size());
-    if (!state_->mapped) throw InvalidArgument("Vulkan buffer is not host visible");
-    if (data.empty()) return;
+    if (!state_->mapped) {
+        throw InvalidArgument("Vulkan buffer is not host visible");
+    }
+    if (data.empty()) {
+        return;
+    }
     checkVma(vmaInvalidateAllocation(state_->device->allocator, state_->allocation, offset, data.size()),
              "vmaInvalidateAllocation");
     std::memcpy(data.data(), static_cast<const std::byte *>(state_->mapped) + offset, data.size());
 }
 
 VulkanComputeBuffer VulkanComputeContext::createBuffer(std::size_t bytes, VulkanBufferMemory memory) const {
-    if (!state_) throw InvalidArgument("Moved-from Vulkan context");
-    if (!bytes) throw InvalidArgument("Vulkan buffers must be non-empty");
+    if (!state_) {
+        throw InvalidArgument("Moved-from Vulkan context");
+    }
+    if (!bytes) {
+        throw InvalidArgument("Vulkan buffers must be non-empty");
+    }
     auto buffer = std::make_shared<detail::VulkanBufferState>();
     buffer->device = state_;
     buffer->bytes = bytes;
@@ -275,7 +311,9 @@ VulkanComputeKernel VulkanComputeContext::createKernel(const std::filesystem::pa
                                                        std::uint32_t pushConstantBytes,
                                                        std::array<std::uint32_t, 3> localSize,
                                                        const std::string &entryPoint) const {
-    if (!state_) throw InvalidArgument("Moved-from Vulkan context");
+    if (!state_) {
+        throw InvalidArgument("Moved-from Vulkan context");
+    }
     const auto &limits = state_->properties.limits;
     if (!storageBindings || storageBindings > 16 || storageBindings > limits.maxPerStageDescriptorStorageBuffers
         || storageBindings > limits.maxDescriptorSetStorageBuffers || pushConstantBytes % 4
@@ -284,8 +322,9 @@ VulkanComputeKernel VulkanComputeContext::createKernel(const std::filesystem::pa
     }
     std::uint64_t threads = 1;
     for (std::size_t i = 0; i < 3; ++i) {
-        if (!localSize[i] || localSize[i] > limits.maxComputeWorkGroupSize[i])
+        if (!localSize[i] || localSize[i] > limits.maxComputeWorkGroupSize[i]) {
             throw InvalidArgument("Vulkan local size exceeds device limits");
+        }
         threads *= localSize[i];
     }
     if (threads > limits.maxComputeWorkGroupInvocations || entryPoint.empty()
@@ -293,15 +332,21 @@ VulkanComputeKernel VulkanComputeContext::createKernel(const std::filesystem::pa
         throw InvalidArgument("Invalid Vulkan compute entry point or local size");
     }
     std::ifstream input(path, std::ios::binary | std::ios::ate);
-    if (!input) throw IOError("Cannot open SPIR-V file: " + path.string());
+    if (!input) {
+        throw IOError("Cannot open SPIR-V file: " + path.string());
+    }
     const auto bytes = input.tellg();
-    if (bytes < 20 || bytes % 4 != 0) throw InvalidArgument("Invalid SPIR-V file size: " + path.string());
+    if (bytes < 20 || bytes % 4 != 0) {
+        throw InvalidArgument("Invalid SPIR-V file size: " + path.string());
+    }
     std::vector<std::uint32_t> code(static_cast<std::size_t>(bytes) / 4);
     input.seekg(0);
-    if (!input.read(reinterpret_cast<char *>(code.data()), bytes))
+    if (!input.read(reinterpret_cast<char *>(code.data()), bytes)) {
         throw IOError("Cannot read SPIR-V file: " + path.string());
-    if (code[0] != 0x07230203 || code[1] > 0x00010300)
+    }
+    if (code[0] != 0x07230203 || code[1] > 0x00010300) {
         throw InvalidArgument("Expected SPIR-V 1.3 or earlier: " + path.string());
+    }
     auto kernel = std::make_shared<detail::VulkanKernelState>();
     kernel->device = state_;
     kernel->bindings = storageBindings;
@@ -309,13 +354,16 @@ VulkanComputeKernel VulkanComputeContext::createKernel(const std::filesystem::pa
     kernel->shader =
         state_->device->createShaderModuleUnique(vk::ShaderModuleCreateInfo({}, code.size() * 4, code.data()));
     std::vector<vk::DescriptorSetLayoutBinding> bindings;
-    for (std::uint32_t i = 0; i < storageBindings; ++i)
+    for (std::uint32_t i = 0; i < storageBindings; ++i) {
         bindings.emplace_back(i, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eCompute);
+    }
     kernel->descriptors =
         state_->device->createDescriptorSetLayoutUnique(vk::DescriptorSetLayoutCreateInfo({}, bindings));
     const vk::PushConstantRange push(vk::ShaderStageFlagBits::eCompute, 0, pushConstantBytes);
     vk::PipelineLayoutCreateInfo layout({}, *kernel->descriptors);
-    if (pushConstantBytes) layout.setPushConstantRanges(push);
+    if (pushConstantBytes) {
+        layout.setPushConstantRanges(push);
+    }
     kernel->layout = state_->device->createPipelineLayoutUnique(layout);
     const vk::PipelineShaderStageCreateInfo shader({}, vk::ShaderStageFlagBits::eCompute, *kernel->shader,
                                                    entryPoint.c_str());
@@ -333,7 +381,9 @@ VulkanComputeBatch::VulkanComputeBatch(VulkanComputeBatch &&) noexcept = default
 VulkanComputeBatch &VulkanComputeBatch::operator=(VulkanComputeBatch &&) noexcept = default;
 
 VulkanComputeBatch VulkanComputeContext::createBatch() const {
-    if (!state_) throw InvalidArgument("Moved-from Vulkan context");
+    if (!state_) {
+        throw InvalidArgument("Moved-from Vulkan context");
+    }
     auto batch = std::make_unique<detail::VulkanBatchState>();
     batch->device = state_;
     batch->pool = state_->device->createCommandPoolUnique(
@@ -350,7 +400,9 @@ VulkanComputeBatch VulkanComputeContext::createBatch() const {
 
 void VulkanComputeBatch::copy(const VulkanComputeBuffer &source, const VulkanComputeBuffer &destination,
                               std::size_t bytes, std::size_t sourceOffset, std::size_t destinationOffset) {
-    if (!state_) throw InvalidArgument("Moved-from Vulkan batch");
+    if (!state_) {
+        throw InvalidArgument("Moved-from Vulkan batch");
+    }
     state_->requireRecording();
     checkRange(source.size(), sourceOffset, bytes);
     checkRange(destination.size(), destinationOffset, bytes);
@@ -358,7 +410,9 @@ void VulkanComputeBatch::copy(const VulkanComputeBuffer &source, const VulkanCom
         || source.state_ == destination.state_) {
         throw InvalidArgument("Vulkan copies require distinct buffers from this context");
     }
-    if (!bytes) return;
+    if (!bytes) {
+        return;
+    }
     state_->buffers.push_back(source.state_);
     state_->buffers.push_back(destination.state_);
     state_->command.copyBuffer(source.state_->buffer, destination.state_->buffer,
@@ -367,10 +421,13 @@ void VulkanComputeBatch::copy(const VulkanComputeBuffer &source, const VulkanCom
 }
 
 void VulkanComputeBatch::fill(const VulkanComputeBuffer &buffer, std::uint32_t value) {
-    if (!state_) throw InvalidArgument("Moved-from Vulkan batch");
+    if (!state_) {
+        throw InvalidArgument("Moved-from Vulkan batch");
+    }
     state_->requireRecording();
-    if (!buffer.state_ || buffer.state_->device != state_->device || buffer.size() % 4)
+    if (!buffer.state_ || buffer.state_->device != state_->device || buffer.size() % 4) {
         throw InvalidArgument("Vulkan fill requires a buffer from this context with a size divisible by four");
+    }
     state_->buffers.push_back(buffer.state_);
     state_->command.fillBuffer(buffer.state_->buffer, 0, buffer.size(), value);
     state_->barrier();
@@ -378,15 +435,18 @@ void VulkanComputeBatch::fill(const VulkanComputeBuffer &buffer, std::uint32_t v
 
 void VulkanComputeBatch::dispatch(const VulkanComputeKernel &kernel, std::span<const VulkanComputeBuffer> buffers,
                                   std::span<const std::byte> pushConstants, std::array<std::uint32_t, 3> groups) {
-    if (!state_) throw InvalidArgument("Moved-from Vulkan batch");
+    if (!state_) {
+        throw InvalidArgument("Moved-from Vulkan batch");
+    }
     state_->requireRecording();
     if (!kernel.state_ || kernel.state_->device != state_->device || buffers.size() != kernel.state_->bindings
         || pushConstants.size() != kernel.state_->pushBytes) {
         throw InvalidArgument("Vulkan kernel context or argument layout mismatch");
     }
     for (std::size_t i = 0; i < 3; ++i) {
-        if (!groups[i] || groups[i] > state_->device->properties.limits.maxComputeWorkGroupCount[i])
+        if (!groups[i] || groups[i] > state_->device->properties.limits.maxComputeWorkGroupCount[i]) {
             throw InvalidArgument("Vulkan dispatch exceeds device limits");
+        }
     }
     std::vector<vk::DescriptorBufferInfo> infos;
     for (const auto &buffer : buffers) {
@@ -416,15 +476,18 @@ void VulkanComputeBatch::dispatch(const VulkanComputeKernel &kernel, std::span<c
     state_->device->device->updateDescriptorSets(writes, {});
     state_->command.bindPipeline(vk::PipelineBindPoint::eCompute, *kernel.state_->pipeline);
     state_->command.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *kernel.state_->layout, 0, set, {});
-    if (!pushConstants.empty())
+    if (!pushConstants.empty()) {
         state_->command.pushConstants(*kernel.state_->layout, vk::ShaderStageFlagBits::eCompute, 0,
                                       static_cast<std::uint32_t>(pushConstants.size()), pushConstants.data());
+    }
     state_->command.dispatch(groups[0], groups[1], groups[2]);
     state_->barrier();
 }
 
 void VulkanComputeBatch::submitAndWait() {
-    if (!state_) throw InvalidArgument("Moved-from Vulkan batch");
+    if (!state_) {
+        throw InvalidArgument("Moved-from Vulkan batch");
+    }
     state_->requireRecording();
     const vk::MemoryBarrier host(vk::AccessFlagBits::eMemoryWrite, vk::AccessFlagBits::eHostRead);
     state_->command.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eHost, {}, host,
@@ -436,7 +499,9 @@ void VulkanComputeBatch::submitAndWait() {
     state_->inFlight = true;
     const auto result =
         state_->device->device->waitForFences(*state_->fence, true, std::numeric_limits<std::uint64_t>::max());
-    if (result != vk::Result::eSuccess) throw Error("Vulkan compute fence: " + vk::to_string(result));
+    if (result != vk::Result::eSuccess) {
+        throw Error("Vulkan compute fence: " + vk::to_string(result));
+    }
     state_->inFlight = false;
 }
 

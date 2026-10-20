@@ -16,14 +16,19 @@ namespace {
 template <typename T, std::size_t Rank>
 void requireView(const TensorView<T, Rank> &view, const ExecutionContext &context,
                  std::array<std::size_t, Rank> shape) {
-    if (view.context() != context || view.backend() != Backend::Cpu)
+    if (view.context() != context || view.backend() != Backend::Cpu) {
         throw InvalidArgument("Operator buffer belongs to a different execution context");
-    if (view.shape() != shape) throw InvalidArgument("Operator buffer shape mismatch");
+    }
+    if (view.shape() != shape) {
+        throw InvalidArgument("Operator buffer shape mismatch");
+    }
 }
 
 template <typename A, typename B>
 void requireDistinct(const A &a, const B &b) {
-    if (a.overlaps(b)) throw InvalidArgument("Operator input and output must not overlap");
+    if (a.overlaps(b)) {
+        throw InvalidArgument("Operator input and output must not overlap");
+    }
 }
 
 ConstProjectionView prepareWeights(CpuExecutionSession &session, const Geometry &geometry) {
@@ -44,18 +49,21 @@ std::array<std::size_t, 2> validatedDetector(const Geometry &geometry, RampFilte
 
 std::size_t validateFft(std::size_t length, std::size_t rows) {
     if (length < 2 || (length & (length - 1)) || !rows
-        || length > static_cast<std::size_t>(std::numeric_limits<int>::max()))
+        || length > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
         throw InvalidArgument("CPU real FFT requires a power-of-two length >=2 and positive rows");
+    }
     const auto bytes = detail::checkedProduct(length / 2 + 1, rows, sizeof(std::complex<float>));
-    if (bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max()))
+    if (bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
         throw InvalidArgument("CPU real FFT dimensions exceed addressable range");
+    }
     return length;
 }
 
 ConstProjectionView prepareResponse(CpuExecutionSession &session, std::span<const float> response) {
-    if (response.empty() || !std::all_of(response.begin(), response.end(), [](float x) { return std::isfinite(x); }))
+    if (response.empty() || !std::all_of(response.begin(), response.end(), [](float x) { return std::isfinite(x); })) {
         throw InvalidArgument("Spectral response must be nonempty and finite");
-    auto view = session.allocate<float>(std::array{ response.size(), std::size_t{1} });
+    }
+    auto view = session.allocate<float>(std::array{ response.size(), std::size_t{ 1 } });
     std::copy(response.begin(), response.end(), view.hostElements().begin());
     return view;
 }
@@ -63,7 +71,9 @@ ConstProjectionView prepareResponse(CpuExecutionSession &session, std::span<cons
 }  // namespace
 
 CpuWeightAndPad::CpuWeightAndPad(CpuExecutionSession &session, const Geometry &geometry)
-    : weights_(prepareWeights(session, geometry)), paddedWidth_(paddedFFTLength(weights_.shape()[0])) {}
+    : weights_(prepareWeights(session, geometry))
+    , paddedWidth_(paddedFFTLength(weights_.shape()[0])) {
+}
 
 void CpuWeightAndPad::apply(ConstProjectionView projection, ProjectionView padded) const {
     const auto [width, height] = weights_.shape();
@@ -74,8 +84,9 @@ void CpuWeightAndPad::apply(ConstProjectionView projection, ProjectionView padde
     auto output = padded.hostElements();
     std::fill(output.begin(), output.end(), 0.0f);
     for (std::size_t y = 0; y < height; ++y) {
-        for (std::size_t x = 0; x < width; ++x)
+        for (std::size_t x = 0; x < width; ++x) {
             output[y * paddedWidth_ + x] = input[y * width + x] * weights[y * width + x];
+        }
     }
 }
 
@@ -89,16 +100,20 @@ struct CpuRealFft::Impl {
     pocketfft::detail::arr<pocketfft::detail::vtype_t<float>> vectorScratch;
 #endif
     Impl(CpuExecutionSession &session, std::size_t n, std::size_t h)
-        : length(validateFft(n, h)), rows(h), plan(length),
-          scratch(session.allocate<float>(std::array{ length, std::size_t{1} }))
+        : length(validateFft(n, h))
+        , rows(h)
+        , plan(length)
+        , scratch(session.allocate<float>(std::array{ length, std::size_t{ 1 } }))
 #ifndef POCKETFFT_NO_VECTORS
-          , vectorScratch(rows >= lanes ? length : 0)
+        , vectorScratch(rows >= lanes ? length : 0)
 #endif
-    {}
+    {
+    }
 };
 
 CpuRealFft::CpuRealFft(CpuExecutionSession &session, std::size_t length, std::size_t rows)
-    : impl_(std::make_unique<Impl>(session, length, rows)) {}
+    : impl_(std::make_unique<Impl>(session, length, rows)) {
+}
 CpuRealFft::~CpuRealFft() = default;
 
 void CpuRealFft::forward(ConstProjectionView input, SpectrumView output) {
@@ -116,15 +131,17 @@ void CpuRealFft::forward(ConstProjectionView input, SpectrumView output) {
     for (; y + Impl::lanes <= p.rows; y += Impl::lanes) {
         auto *batch = p.vectorScratch.data();
         for (std::size_t x = 0; x < p.length; ++x) {
-            for (std::size_t lane = 0; lane < Impl::lanes; ++lane)
+            for (std::size_t lane = 0; lane < Impl::lanes; ++lane) {
                 batch[x][lane] = source[(y + lane) * p.length + x];
+            }
         }
         p.plan.exec(batch, 1.0f, true);
         for (std::size_t lane = 0; lane < Impl::lanes; ++lane) {
             const auto base = (y + lane) * frequencies;
             destination[base] = { batch[0][lane], 0.0f };
-            for (std::size_t k = 1; k < frequencies - 1; ++k)
+            for (std::size_t k = 1; k < frequencies - 1; ++k) {
                 destination[base + k] = { batch[2 * k - 1][lane], batch[2 * k][lane] };
+            }
             destination[base + frequencies - 1] = { batch[p.length - 1][lane], 0.0f };
         }
     }
@@ -136,8 +153,9 @@ void CpuRealFft::forward(ConstProjectionView input, SpectrumView output) {
         // pocketfft still allocates transient native scratch inside exec().
         p.plan.exec(row.data(), 1.0f, true);
         destination[y * frequencies] = { row[0], 0.0f };
-        for (std::size_t k = 1; k < frequencies - 1; ++k)
+        for (std::size_t k = 1; k < frequencies - 1; ++k) {
             destination[y * frequencies + k] = { row[2 * k - 1], row[2 * k] };
+        }
         destination[y * frequencies + frequencies - 1] = { row[p.length - 1], 0.0f };
     }
 }
@@ -166,8 +184,9 @@ void CpuRealFft::inverse(ConstSpectrumView input, ProjectionView output) {
         }
         p.plan.exec(batch, 1.0f / p.length, false);
         for (std::size_t x = 0; x < p.length; ++x) {
-            for (std::size_t lane = 0; lane < Impl::lanes; ++lane)
+            for (std::size_t lane = 0; lane < Impl::lanes; ++lane) {
                 destination[(y + lane) * p.length + x] = batch[x][lane];
+            }
         }
     }
 #endif
@@ -184,7 +203,8 @@ void CpuRealFft::inverse(ConstSpectrumView input, ProjectionView output) {
 }
 
 CpuSpectralMultiply::CpuSpectralMultiply(CpuExecutionSession &session, std::span<const float> response)
-    : response_(prepareResponse(session, response)) {}
+    : response_(prepareResponse(session, response)) {
+}
 
 void CpuSpectralMultiply::apply(SpectrumView spectrum) const {
     const auto frequencies = response_.shape()[0];
@@ -192,30 +212,36 @@ void CpuSpectralMultiply::apply(SpectrumView spectrum) const {
     auto values = spectrum.hostElements();
     const auto response = response_.hostElements();
     for (std::size_t y = 0; y < spectrum.shape()[1]; ++y) {
-        for (std::size_t k = 0; k < frequencies; ++k) values[y * frequencies + k] *= response[k];
+        for (std::size_t k = 0; k < frequencies; ++k) {
+            values[y * frequencies + k] *= response[k];
+        }
     }
 }
 
 void CpuCrop::apply(ConstProjectionView input, ProjectionView output) const {
     requireView(input, context_, input.shape());
     requireView(output, context_, std::array{ output.shape()[0], input.shape()[1] });
-    if (output.shape()[0] > input.shape()[0]) throw InvalidArgument("Crop output is wider than its input");
+    if (output.shape()[0] > input.shape()[0]) {
+        throw InvalidArgument("Crop output is wider than its input");
+    }
     requireDistinct(input, output);
     const auto source = input.hostElements();
     auto destination = output.hostElements();
-    for (std::size_t y = 0; y < output.shape()[1]; ++y)
+    for (std::size_t y = 0; y < output.shape()[1]; ++y) {
         std::copy_n(source.data() + y * input.shape()[0], output.shape()[0],
                     destination.data() + y * output.shape()[0]);
+    }
 }
 
 CpuProjectionFilter::CpuProjectionFilter(CpuExecutionSession &session, const Geometry &geometry, RampFilter filter)
-    : detectorShape_(validatedDetector(geometry, filter)),
-      fft_(session, paddedFFTLength(detectorShape_[0]), detectorShape_[1]),
-      multiply_(session, makeRampResponse(paddedFFTLength(detectorShape_[0]),
-                                          geometry.pixSize.x * geometry.sod / geometry.sdd, filter)),
-      crop_(session),
-      spectrum_(session.allocate<std::complex<float>>(
-          std::array{ paddedFFTLength(detectorShape_[0]) / 2 + 1, detectorShape_[1] })) {}
+    : detectorShape_(validatedDetector(geometry, filter))
+    , fft_(session, paddedFFTLength(detectorShape_[0]), detectorShape_[1])
+    , multiply_(session, makeRampResponse(paddedFFTLength(detectorShape_[0]),
+                                          geometry.pixSize.x * geometry.sod / geometry.sdd, filter))
+    , crop_(session)
+    , spectrum_(session.allocate<std::complex<float>>(
+          std::array{ paddedFFTLength(detectorShape_[0]) / 2 + 1, detectorShape_[1] })) {
+}
 
 void CpuProjectionFilter::apply(ProjectionView padded, ProjectionView filtered) {
     // Validate the complete composite operation before modifying either caller buffer.
@@ -229,7 +255,8 @@ void CpuProjectionFilter::apply(ProjectionView padded, ProjectionView filtered) 
 }
 
 CpuFdkBackprojection::CpuFdkBackprojection(const CpuExecutionSession &session, const Geometry &geometry)
-    : context_(session.context()), geometry_(geometry) {
+    : context_(session.context())
+    , geometry_(geometry) {
     detail::validateFdkGeometry(geometry_);
 }
 
@@ -238,10 +265,13 @@ void CpuFdkBackprojection::accumulate(ConstProjectionView filtered, VolumeView v
     const auto height = static_cast<std::size_t>(geometry_.detSize.y);
     const auto size = geometry_.volSize;
     requireView(filtered, context_, std::array{ width, height });
-    requireView(volume, context_, std::array{ static_cast<std::size_t>(size.x), static_cast<std::size_t>(size.y),
-                                            static_cast<std::size_t>(size.z) });
+    requireView(volume, context_,
+                std::array{ static_cast<std::size_t>(size.x), static_cast<std::size_t>(size.y),
+                            static_cast<std::size_t>(size.z) });
     requireDistinct(filtered, volume);
-    if (!std::isfinite(theta) || !std::isfinite(scale)) throw InvalidArgument("FDK angle and scale must be finite");
+    if (!std::isfinite(theta) || !std::isfinite(scale)) {
+        throw InvalidArgument("FDK angle and scale must be finite");
+    }
     const float *projection = filtered.hostElements().data();
     float *output = volume.hostElements().data();
     OMP_PARALLEL_FOR(int z = 0; z < size.z; ++z) {
@@ -250,8 +280,9 @@ void CpuFdkBackprojection::accumulate(ConstProjectionView filtered, VolumeView v
                 const auto uvw = vox2pix(vec3i(x, y, z), theta, geometry_);
                 if (uvw.x >= 0 && uvw.y >= 0 && uvw.x < width && uvw.y < height) {
                     const auto index = (static_cast<std::size_t>(z) * size.y + y) * size.x + x;
-                    output[index] += bilerp(projection, static_cast<int>(width), static_cast<int>(height),
-                                             uvw.x - 0.5f, uvw.y - 0.5f) * uvw.z * scale;
+                    output[index] += bilerp(projection, static_cast<int>(width), static_cast<int>(height), uvw.x - 0.5f,
+                                            uvw.y - 0.5f)
+                                     * uvw.z * scale;
                 }
             }
         }

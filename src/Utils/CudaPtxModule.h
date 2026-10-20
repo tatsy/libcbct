@@ -48,8 +48,8 @@ public:
     // Each argument points to a host value, including host variables holding device pointers.
     // The argument count, sizes, and order must match the generated PTX signature.
     // Launches are asynchronous; use cudaStreamSynchronize to observe execution errors.
-    void launch(dim3 grid, dim3 block, std::span<void *> arguments = {},
-                cudaStream_t stream = nullptr, unsigned int sharedMemoryBytes = 0) const;
+    void launch(dim3 grid, dim3 block, std::span<void *> arguments = {}, cudaStream_t stream = nullptr,
+                unsigned int sharedMemoryBytes = 0) const;
 
 private:
     friend class CudaPtxModule;

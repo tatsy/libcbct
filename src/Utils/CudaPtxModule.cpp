@@ -23,8 +23,8 @@ void checkDriver(CUresult result, std::string_view operation, const char *jitLog
     const char *description = nullptr;
     cuGetErrorName(result, &name);
     cuGetErrorString(result, &description);
-    std::string message = std::string(operation) + ": " + (name ? name : "CUDA Driver error") +
-                          " (" + (description ? description : "unknown error") + ")";
+    std::string message = std::string(operation) + ": " + (name ? name : "CUDA Driver error") + " ("
+                          + (description ? description : "unknown error") + ")";
     if (*jitLog) {
         message += "\nPTX JIT log: ";
         message += jitLog;
@@ -86,8 +86,8 @@ CudaPtxModule CudaPtxModule::fromFile(const std::filesystem::path &path, int dev
 }
 
 CudaPtxModule CudaPtxModule::fromPtx(std::string_view ptx, int device) {
-    if (ptx.empty() || ptx.front() == '\0' ||
-        (ptx.find('\0') != std::string_view::npos && ptx.find('\0') != ptx.size() - 1)) {
+    if (ptx.empty() || ptx.front() == '\0'
+        || (ptx.find('\0') != std::string_view::npos && ptx.find('\0') != ptx.size() - 1)) {
         throw InvalidArgument("PTX source must be non-empty text without embedded null bytes");
     }
     if (device < -1) {
@@ -143,8 +143,8 @@ void CudaPtxModule::setGlobalData(std::string_view name, std::span<const std::by
     checkDriver(cuModuleGetGlobal(&address, &size, state_->module, symbol.c_str()),
                 "cuModuleGetGlobal(" + symbol + ")");
     if (data.size() != size) {
-        throw InvalidArgument("PTX global " + symbol + " requires " + std::to_string(size) +
-                              " bytes, received " + std::to_string(data.size()));
+        throw InvalidArgument("PTX global " + symbol + " requires " + std::to_string(size) + " bytes, received "
+                              + std::to_string(data.size()));
     }
     if (!data.empty()) {
         checkDriver(cuMemcpyHtoD(address, data.data(), data.size()), "cuMemcpyHtoD(" + symbol + ")");
@@ -156,8 +156,8 @@ CudaPtxKernel::CudaPtxKernel(std::shared_ptr<detail::CudaPtxModuleState> state, 
     , function_(function) {
 }
 
-void CudaPtxKernel::launch(dim3 grid, dim3 block, std::span<void *> arguments,
-                           cudaStream_t stream, unsigned int sharedMemoryBytes) const {
+void CudaPtxKernel::launch(dim3 grid, dim3 block, std::span<void *> arguments, cudaStream_t stream,
+                           unsigned int sharedMemoryBytes) const {
     if (!state_ || !function_) {
         throw InvalidArgument("Cannot launch a moved-from PTX kernel");
     }
@@ -177,9 +177,8 @@ void CudaPtxKernel::launch(dim3 grid, dim3 block, std::span<void *> arguments,
             throw InvalidArgument("CUDA stream must belong to the PTX module's primary context");
         }
     }
-    checkDriver(cuLaunchKernel(static_cast<CUfunction>(function_), grid.x, grid.y, grid.z,
-                              block.x, block.y, block.z, sharedMemoryBytes, stream,
-                              arguments.empty() ? nullptr : arguments.data(), nullptr),
+    checkDriver(cuLaunchKernel(static_cast<CUfunction>(function_), grid.x, grid.y, grid.z, block.x, block.y, block.z,
+                               sharedMemoryBytes, stream, arguments.empty() ? nullptr : arguments.data(), nullptr),
                 "cuLaunchKernel");
 }
 

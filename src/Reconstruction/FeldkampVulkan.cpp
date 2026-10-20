@@ -16,8 +16,9 @@ namespace libcbct {
 namespace {
 
 std::size_t checkedProduct(std::size_t a, std::size_t b) {
-    if (b && a > std::numeric_limits<std::size_t>::max() / b)
+    if (b && a > std::numeric_limits<std::size_t>::max() / b) {
         throw libcbct::InvalidArgument("Vulkan FDK allocation size overflow");
+    }
     return a * b;
 }
 
@@ -40,8 +41,9 @@ VolumeF32 FeldkampVulkan::reconstruct(const VolumeF32 &sinogram, const Geometry 
         || !positiveFinite(geometry.pixSize.y) || !positiveFinite(geometry.sod) || !positiveFinite(geometry.sdd)) {
         throw InvalidArgument("FDK requires detectors of at least 2x2, projections, and positive finite geometry");
     }
-    if (filter_ != RampFilter::RamLak && filter_ != RampFilter::SheppLogan)
+    if (filter_ != RampFilter::RamLak && filter_ != RampFilter::SheppLogan) {
         throw InvalidArgument("Unknown FDK ramp filter");
+    }
     const auto length = paddedFFTLength(width);
     const auto paddedCount = checkedProduct(length, height);
     const auto pixels = checkedProduct(width, height);

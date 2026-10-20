@@ -117,7 +117,9 @@ VolumeF32 FeldkampCuda::reconstruct(const VolumeF32 &sinogram, const Geometry &g
 
     const double dp = geometry.pixSize.x * geometry.sod / geometry.sdd;
     std::vector<float> response = makeRampResponse(nPad, dp, filter_);
-    for (float &h : response) h /= static_cast<float>(nPad);
+    for (float &h : response) {
+        h /= static_cast<float>(nPad);
+    }
     const std::vector<float> weights = makeCosineWeights(geometry, detWidth, detHeight);
 
     DeviceBuffer<float> devProj(nPixels), devWeights(nPixels), devPadded(detHeight * nPad);

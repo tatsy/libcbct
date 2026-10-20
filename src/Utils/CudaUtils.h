@@ -16,13 +16,14 @@
 // CUDA and error check
 // -----------------------------------------------------------------------------
 
-#define CUDA_CHECK(call)                                                                                                      \
-    do {                                                                                                                      \
-        cudaError_t rc_ = (cudaError_t)(call);                                                                                \
-        if (rc_ != cudaSuccess) {                                                                                             \
-            throw ::libcbct::CudaError((int)rc_, ::libcbct::STR_FMT("CUDA error {} ({}: line {}): {}", cudaGetErrorName(rc_), \
-                                                       __FILE__, __LINE__, cudaGetErrorString(rc_)));                         \
-        }                                                                                                                     \
+#define CUDA_CHECK(call)                                                                                         \
+    do {                                                                                                         \
+        cudaError_t rc_ = (cudaError_t)(call);                                                                   \
+        if (rc_ != cudaSuccess) {                                                                                \
+            throw ::libcbct::CudaError(                                                                          \
+                (int)rc_, ::libcbct::STR_FMT("CUDA error {} ({}: line {}): {}", cudaGetErrorName(rc_), __FILE__, \
+                                             __LINE__, cudaGetErrorString(rc_)));                                \
+        }                                                                                                        \
     } while (false)
 
 #define CUDA_CHECK_NOEXCEPT(call) \
@@ -30,12 +31,13 @@
         cuda##call;               \
     } while (false)
 
-#define CUFFT_CHECK(call)                                                                                                      \
-    do {                                                                                                                       \
-        const cufftResult rc_ = (call);                                                                                        \
-        if (rc_ != CUFFT_SUCCESS) {                                                                                            \
-            throw ::libcbct::CudaError((int)rc_, ::libcbct::STR_FMT("cuFFT error {} at {}:{}", (int)rc_, __FILE__, __LINE__)); \
-        }                                                                                                                      \
+#define CUFFT_CHECK(call)                                                                                            \
+    do {                                                                                                             \
+        const cufftResult rc_ = (call);                                                                              \
+        if (rc_ != CUFFT_SUCCESS) {                                                                                  \
+            throw ::libcbct::CudaError((int)rc_,                                                                     \
+                                       ::libcbct::STR_FMT("cuFFT error {} at {}:{}", (int)rc_, __FILE__, __LINE__)); \
+        }                                                                                                            \
     } while (false)
 
 #define CUDA_SYNC_CHECK()                    \

@@ -70,14 +70,18 @@ int run(int argc, char **argv) {
         // Check for CUDA availability
 #if defined(LIBCBCT_WITH_CUDA)
         int deviceCount = 0;
-        if (cudaGetDeviceCount(&deviceCount) == cudaSuccess && deviceCount > 0) backend = "cuda";
+        if (cudaGetDeviceCount(&deviceCount) == cudaSuccess && deviceCount > 0) {
+            backend = "cuda";
+        }
 #endif
 
         // Check for Vulkan availability
 #if defined(LIBCBCT_WITH_VULKAN)
         if (backend == "cpu") {
             try {
-                if (!cbct::VulkanComputeContext::availableDevices().empty()) backend = "vulkan";
+                if (!cbct::VulkanComputeContext::availableDevices().empty()) {
+                    backend = "vulkan";
+                }
             } catch (const cbct::VulkanUnavailable &) {
                 // A Vulkan build can run on a host without a compatible driver.
             }
@@ -107,14 +111,18 @@ int run(int argc, char **argv) {
     }
 
     const int volSize = configs["size"].as<int>();
-    if (volSize <= 0) throw libcbct::InvalidArgument("Reconstruction size must be positive");
+    if (volSize <= 0) {
+        throw libcbct::InvalidArgument("Reconstruction size must be positive");
+    }
     if (configs["config"].count() == 0) {
         std::cout << options.help() << std::endl;
         return 0;
     }
     cbct::LIBCBCT_INFO("Reconstruction backend: {}", backend);
     cbct::LIBCBCT_INFO("OpenMP threads: {}", omp_get_max_threads());
-    if (backend == "cuda") cbct::showCudaInfo();
+    if (backend == "cuda") {
+        cbct::showCudaInfo();
+    }
 
     // Read device parameters
     fs::path configPath(configs["config"].as<std::string>());
@@ -181,7 +189,9 @@ int run(int argc, char **argv) {
     cbct::LIBCBCT_DEBUG("Reconstructed volume saved: {}", outputPath.string());
 
     // Preview
-    if (configs.count("no-preview")) return 0;
+    if (configs.count("no-preview")) {
+        return 0;
+    }
 
     int initPos = volSize / 2;
     cv::namedWindow("volume", cv::WINDOW_AUTOSIZE);

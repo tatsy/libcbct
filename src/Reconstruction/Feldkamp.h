@@ -23,6 +23,7 @@ public:
     explicit Feldkamp(Backend backend = Backend::Cpu, RampFilter filter = RampFilter::SheppLogan);
     explicit Feldkamp(FeldkampOptions options);
     VolumeF32 reconstruct(const VolumeF32 &sinogram, const Geometry &geometry) const override;
+
 private:
     FeldkampOptions options_;
 };

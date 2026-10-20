@@ -13,11 +13,15 @@ namespace detail {
 
 // Validate before modifying a volume or converting its values to integers.
 inline std::pair<float, float> finiteMinMax(const VolumeF32 &volume) {
-    if (volume.empty()) throw InvalidArgument("Cannot normalize an empty volume");
+    if (volume.empty()) {
+        throw InvalidArgument("Cannot normalize an empty volume");
+    }
     float minVal = volume.ptr()[0], maxVal = minVal;
     for (size_t i = 0; i < volume.numel(); ++i) {
         const float value = volume.ptr()[i];
-        if (!std::isfinite(value)) throw InvalidArgument("Cannot normalize a volume containing NaN or infinity");
+        if (!std::isfinite(value)) {
+            throw InvalidArgument("Cannot normalize a volume containing NaN or infinity");
+        }
         minVal = std::min(minVal, value);
         maxVal = std::max(maxVal, value);
     }

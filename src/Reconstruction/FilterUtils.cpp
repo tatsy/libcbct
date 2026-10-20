@@ -12,7 +12,9 @@ namespace pfft = pocketfft;
 
 size_t paddedFFTLength(size_t detWidth) {
     size_t nPad = 1;
-    while (nPad < 2 * detWidth) nPad <<= 1;
+    while (nPad < 2 * detWidth) {
+        nPad <<= 1;
+    }
     return nPad;
 }
 

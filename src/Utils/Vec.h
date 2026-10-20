@@ -619,7 +619,9 @@ template <typename T, int N>
     requires(N >= 2 && N <= 4)
 inline __both__ constexpr bool operator==(const vec_t<T, N> &a, const vec_t<T, N> &b) {
     for (int i = 0; i < N; ++i) {
-        if (a[i] != b[i]) return false;
+        if (a[i] != b[i]) {
+            return false;
+        }
     }
     return true;
 }

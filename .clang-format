@@ -12,8 +12,8 @@ AlignTrailingComments: true
 AlignOperands: Align
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowAllConstructorInitializersOnNextLine: false
-AllowShortBlocksOnASingleLine: false
-AllowShortFunctionsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: None
 BinPackArguments: true
 BreakBeforeBinaryOperators: NonAssignment
 BreakConstructorInitializers: BeforeColon
@@ -22,6 +22,7 @@ Cpp11BracedListStyle: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 DerivePointerAlignment: false
 PPIndentWidth: 2
+InsertBraces: true
 IndentPPDirectives: None
 MaxEmptyLinesToKeep: 1
 PointerAlignment: Right

@@ -20,7 +20,9 @@ struct UniformLocation {
 void collectFields(const nlohmann::json &type, std::size_t base, const std::string &prefix, std::size_t pushSize,
                    std::map<std::string, UniformLocation, std::less<>> &uniforms,
                    std::map<std::string, std::uint32_t, std::less<>> &buffers) {
-    if (type.at("kind") != "struct") throw InvalidArgument("Slang SPIR-V parameters must be a structure");
+    if (type.at("kind") != "struct") {
+        throw InvalidArgument("Slang SPIR-V parameters must be a structure");
+    }
     for (const auto &field : type.at("fields")) {
         const auto name = prefix + field.at("name").get<std::string>();
         const auto &binding = field.at("binding");
@@ -67,7 +69,9 @@ SlangSpirvKernel::SlangSpirvKernel(const VulkanComputeContext &context, const st
                                    const std::string &entryPoint) {
     const auto path = directory / (entryPoint + ".spirv.json");
     std::ifstream input(path);
-    if (!input) throw IOError("Cannot open SPIR-V reflection file: " + path.string());
+    if (!input) {
+        throw IOError("Cannot open SPIR-V reflection file: " + path.string());
+    }
     try {
         const auto reflection = nlohmann::json::parse(input);
         if (!reflection.at("parameters").empty() || reflection.at("entryPoints").size() != 1) {
@@ -95,15 +99,18 @@ SlangSpirvKernel::SlangSpirvKernel(const VulkanComputeContext &context, const st
                 throw InvalidArgument("Unsupported Slang SPIR-V parameter block: " + entryPoint);
             }
         }
-        if (!pushSize || !bufferCount)
+        if (!pushSize || !bufferCount) {
             throw InvalidArgument("Slang SPIR-V requires storage buffers and push constants");
+        }
         auto state =
             std::make_unique<State>(context.createKernel(directory / (entryPoint + ".spv"), bufferCount, pushSize));
         state->constants.resize(pushSize);
         state->buffers.resize(bufferCount);
         collectFields(params.at("type"), 0, "", pushSize, state->uniforms, state->bufferIndices);
         std::set<std::uint32_t> indices;
-        for (const auto &[name, index] : state->bufferIndices) indices.insert(index);
+        for (const auto &[name, index] : state->bufferIndices) {
+            indices.insert(index);
+        }
         if (state->bufferIndices.size() != bufferCount || indices.size() != bufferCount
             || *indices.rbegin() >= bufferCount) {
             throw InvalidArgument("Slang SPIR-V storage bindings must be consecutive from zero");
@@ -119,15 +126,20 @@ SlangSpirvKernel::SlangSpirvKernel(SlangSpirvKernel &&) noexcept = default;
 SlangSpirvKernel &SlangSpirvKernel::operator=(SlangSpirvKernel &&) noexcept = default;
 
 void SlangSpirvKernel::setBuffer(std::string_view name, const VulkanComputeBuffer &buffer) {
-    if (!state_) throw InvalidArgument("Moved-from Slang SPIR-V kernel");
+    if (!state_) {
+        throw InvalidArgument("Moved-from Slang SPIR-V kernel");
+    }
     const auto found = state_->bufferIndices.find(name);
-    if (found == state_->bufferIndices.end())
+    if (found == state_->bufferIndices.end()) {
         throw InvalidArgument("Unknown Slang SPIR-V buffer: " + std::string(name));
+    }
     state_->buffers[found->second] = buffer;
 }
 
 void SlangSpirvKernel::setUniformBytes(std::string_view name, std::span<const std::byte> data) {
-    if (!state_) throw InvalidArgument("Moved-from Slang SPIR-V kernel");
+    if (!state_) {
+        throw InvalidArgument("Moved-from Slang SPIR-V kernel");
+    }
     const auto found = state_->uniforms.find(name);
     if (found == state_->uniforms.end() || data.size() != found->second.size) {
         throw InvalidArgument("Slang SPIR-V uniform name or size mismatch: " + std::string(name));
@@ -137,12 +149,17 @@ void SlangSpirvKernel::setUniformBytes(std::string_view name, std::span<const st
 }
 
 void SlangSpirvKernel::dispatch(VulkanComputeBatch &batch, std::array<std::uint32_t, 3> groups) const {
-    if (!state_) throw InvalidArgument("Moved-from Slang SPIR-V kernel");
-    if (state_->assignedUniforms.size() != state_->uniforms.size())
+    if (!state_) {
+        throw InvalidArgument("Moved-from Slang SPIR-V kernel");
+    }
+    if (state_->assignedUniforms.size() != state_->uniforms.size()) {
         throw InvalidArgument("Slang SPIR-V uniforms have not all been assigned");
+    }
     std::vector<VulkanComputeBuffer> buffers;
     for (const auto &buffer : state_->buffers) {
-        if (!buffer) throw InvalidArgument("Slang SPIR-V buffers have not all been assigned");
+        if (!buffer) {
+            throw InvalidArgument("Slang SPIR-V buffers have not all been assigned");
+        }
         buffers.push_back(*buffer);
     }
     batch.dispatch(state_->kernel, buffers, state_->constants, groups);
