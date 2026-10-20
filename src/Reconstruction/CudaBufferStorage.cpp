@@ -75,10 +75,10 @@ public:
 
         std::size_t count = 1;
         for (auto extent : view.shape()) {
-            count = checkProduct(count, extent);
+            count = detail::checkedProduct(count, extent);
         }
 
-        const auto bytes = chckedProduct(count, sizeof(T));
+        const auto bytes = detail::checkedProduct(count, sizeof(T));
         const auto offset = view.byteOffset_;
         const auto capacity = storage->sizeBytes();
 
@@ -108,7 +108,7 @@ public:
 
     ~CudaContextScope() {
         CUcontext popped = nullptr;
-        checkDriver(cuCtxPopCurrent(&popped), "cuCtxPopCurrent");
+        cuCtxPopCurrent(&popped);
     }
 
     CudaContextScope(const CudaContextScope &) = delete;

@@ -140,6 +140,7 @@ private:
     friend class TensorView;
     friend class CpuExecutionSession;
     friend class CudaExecutionSession;
+    friend class CudaBufferAccess;
 };
 
 using ProjectionView = TensorView<float, 2>;

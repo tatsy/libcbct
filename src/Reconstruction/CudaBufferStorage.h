@@ -28,7 +28,7 @@ private:
     std::shared_ptr<CudaDeviceState> device_ = nullptr;
     CUdeviceptr address_ = 0;
 
-    friend class CudaBufferAccess;
+    friend class ::libcbct::CudaBufferAccess;
 };
 
 }  // namespace detail
