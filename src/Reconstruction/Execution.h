@@ -122,7 +122,7 @@ public:
         if (storage_ == other.storage_) {
             // Shared storage can be compared without mapping device memory to the host.
             return byteOffset_ <= other.byteOffset_ ? other.byteOffset_ - byteOffset_ < bytes
-                                                   : byteOffset_ - other.byteOffset_ < otherBytes;
+                                                    : byteOffset_ - other.byteOffset_ < otherBytes;
         }
         if (backend() == Backend::Cpu && other.backend() == Backend::Cpu) {
             // Independently borrowed CPU views may alias, even across sessions.
