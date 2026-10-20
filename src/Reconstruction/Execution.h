@@ -117,12 +117,32 @@ public:
 
     template <typename U, std::size_t OtherRank>
     bool overlaps(const TensorView<U, OtherRank> &other) const {
-        const auto a = reinterpret_cast<std::uintptr_t>(hostElements().data());
-        const auto b = reinterpret_cast<std::uintptr_t>(other.hostElements().data());
-        return a <= b ? b - a < storage_->sizeBytes() : a - b < other.storage_->sizeBytes();
+        const auto bytes = viewSizeBytes();
+        const auto otherBytes = other.viewSizeBytes();
+        if (storage_ == other.storage_) {
+            // Shared storage can be compared without mapping device memory to the host.
+            return byteOffset_ <= other.byteOffset_ ? other.byteOffset_ - byteOffset_ < bytes
+                                                   : byteOffset_ - other.byteOffset_ < otherBytes;
+        }
+        if (backend() == Backend::Cpu && other.backend() == Backend::Cpu) {
+            // Independently borrowed CPU views may alias, even across sessions.
+            const auto a = reinterpret_cast<std::uintptr_t>(hostElements().data());
+            const auto b = reinterpret_cast<std::uintptr_t>(other.hostElements().data());
+            return a <= b ? b - a < bytes : a - b < otherBytes;
+        }
+        // Device allocations have unique storage objects; their slices share that storage.
+        return false;
     }
 
 private:
+    std::size_t viewSizeBytes() const {
+        std::size_t count = 1;
+        for (auto extent : shape_) {
+            count = detail::checkedProduct(count, extent);
+        }
+        return detail::checkedProduct(count, sizeof(T));
+    }
+
     TensorView(std::shared_ptr<detail::BufferStorage> storage, std::size_t byteOffset, Shape shape)
         : storage_(std::move(storage))
         , byteOffset_(byteOffset)

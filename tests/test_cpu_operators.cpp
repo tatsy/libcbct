@@ -53,6 +53,72 @@ TEST(CpuExecution, BorrowDoesNotCopyAndRejectsInconsistentOrOverflowingShapes) {
                  InvalidArgument);
 }
 
+TEST(CpuExecution, OverlapUsesSliceExtentForRealAndComplexViews) {
+    const auto check = []<typename T>() {
+        CpuExecutionSession session;
+        auto volume = session.allocate<T>(std::array<std::size_t, 3>{ 3, 2, 3 });
+        auto first = volume.slice(0);
+        auto middle = volume.slice(1);
+        auto last = volume.slice(2);
+        TensorView<const T, 2> readOnly = middle;
+        EXPECT_FALSE(first.overlaps(middle));
+        EXPECT_FALSE(middle.overlaps(first));
+        EXPECT_FALSE(middle.overlaps(last));
+        EXPECT_FALSE(last.overlaps(first));
+        EXPECT_TRUE(middle.overlaps(middle));
+        EXPECT_TRUE(readOnly.overlaps(middle));
+        EXPECT_TRUE(middle.overlaps(readOnly));
+        EXPECT_TRUE(volume.overlaps(last));
+        EXPECT_TRUE(last.overlaps(volume));
+        auto separate = session.allocate<T>(std::array<std::size_t, 2>{ 3, 2 });
+        EXPECT_FALSE(middle.overlaps(separate));
+        EXPECT_FALSE(separate.overlaps(middle));
+    };
+    check.template operator()<float>();
+    check.template operator()<std::complex<float>>();
+}
+
+TEST(CpuExecution, OverlapDetectsAliasesAcrossBorrowedStorageAndContexts) {
+    CpuExecutionSession session, other;
+    std::array<float, 12> data{};
+    const std::span<float> elements(data);
+    const std::array<std::size_t, 2> shape{ 3, 2 };
+    auto first = session.makeView(elements.first(6), shape);
+    auto adjacent = session.makeView(elements.subspan(6), shape);
+    auto partial = session.makeView(elements.subspan(5, 6), shape);
+    auto alias = other.makeView(std::span<const float>(elements.first(6)), shape);
+    EXPECT_FALSE(first.overlaps(adjacent));
+    EXPECT_FALSE(adjacent.overlaps(first));
+    EXPECT_TRUE(first.overlaps(partial));
+    EXPECT_TRUE(partial.overlaps(first));
+    EXPECT_TRUE(first.overlaps(alias));
+    EXPECT_TRUE(alias.overlaps(first));
+
+    auto volume = session.makeView(elements, std::array<std::size_t, 3>{ 3, 2, 2 });
+    EXPECT_FALSE(volume.slice(0).overlaps(adjacent));
+    EXPECT_FALSE(adjacent.overlaps(volume.slice(0)));
+    EXPECT_TRUE(volume.slice(1).overlaps(adjacent));
+    EXPECT_TRUE(adjacent.overlaps(volume.slice(1)));
+}
+
+TEST(CpuCrop, AcceptsDisjointSlicesAndRejectsAliasedSlicesBeforeWriting) {
+    CpuExecutionSession session;
+    CpuCrop crop(session);
+    auto volume = session.allocate<float>(std::array<std::size_t, 3>{ 3, 2, 2 });
+    auto input = volume.slice(0);
+    auto output = volume.slice(1);
+    for (std::size_t i = 0; i < input.hostElements().size(); ++i) {
+        input.hostElements()[i] = static_cast<float>(i + 1);
+    }
+    fill(output, -1.0f);
+    ASSERT_NO_THROW(crop.apply(input, output));
+    EXPECT_TRUE(std::equal(input.hostElements().begin(), input.hostElements().end(), output.hostElements().begin()));
+    EXPECT_THROW(crop.apply(output, output), InvalidArgument);
+    for (std::size_t i = 0; i < output.hostElements().size(); ++i) {
+        EXPECT_EQ(output.hostElements()[i], static_cast<float>(i + 1));
+    }
+}
+
 TEST(CpuWeightAndPad, OverwritesPixelsAndPaddingAndReadsUpdatedInput) {
     CpuExecutionSession session;
     CpuWeightAndPad weight(session, kGeometry);
