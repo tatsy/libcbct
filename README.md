@@ -51,6 +51,13 @@ ctest --preset msvc2022-cuda-release
 ```
 
 Use `macos-vulkan-release` for all three commands on macOS with Vulkan.
+
+For macOS with Homebrew GCC, use `LIBCBCT_BUILD_OPENCV_FROM_SOURCE=ON`
+to build OpenCV with the same C++ standard library. This build omits OpenCV's
+`CGImage`/`NSImage` conversion bridges, whose Apple SDK headers require Clang;
+libcbct's image file I/O remains available. OpenCV's Cocoa GUI backend also
+requires Clang, so use Apple Clang for the example application's volume viewer.
+
 Machine-specific dependency paths belong in the Git-ignored
 `CMakeUserPresets.json`. For example, adapt these OpenCV paths for a local
 Windows CPU build; `OpenCV_DIR` must contain `OpenCVConfig.cmake`:

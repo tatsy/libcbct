@@ -234,6 +234,16 @@ else()
   set(WITH_AVFOUNDATION OFF CACHE INTERNAL "")  # macOS
 
   FetchContent_MakeAvailable(opencv)
+  if (APPLE AND NOT IOS AND NOT XROS AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # OpenCV 4.12 unconditionally includes Apple image bridges in imgcodecs.
+    # They require Clang's Objective-C++/SDK support; libcbct uses C++ file I/O.
+    get_target_property(libcbct_imgcodecs_sources opencv_imgcodecs SOURCES)
+    list(REMOVE_ITEM libcbct_imgcodecs_sources
+      "${opencv_SOURCE_DIR}/modules/imgcodecs/src/apple_conversions.mm"
+      "${opencv_SOURCE_DIR}/modules/imgcodecs/src/macosx_conversions.mm")
+    set_property(TARGET opencv_imgcodecs PROPERTY SOURCES "${libcbct_imgcodecs_sources}")
+    message(STATUS "OpenCV: omitting Apple image bridges for macOS GCC")
+  endif()
   set(OpenCV_INCLUDE_DIRS
     ${opencv_SOURCE_DIR}/include
     ${CMAKE_CURRENT_BINARY_DIR}
