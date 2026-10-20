@@ -51,12 +51,14 @@ set(LIBCBCT_SOURCES
 if (LIBCBCT_WITH_CUDA)
   list(APPEND LIBCBCT_HEADERS
     Reconstruction/CudaOperators.h
+    Reconstruction/CudaBufferStorage.h
     Reconstruction/FeldkampCuda.h
     Reconstruction/Slang/FdkCudaParameters.h
     Utils/DeviceBuffer.h
     Utils/CudaPtxModule.h)
   list(APPEND LIBCBCT_SOURCES
     Reconstruction/CudaOperators.cpp
+    Reconstruction/CudaBufferStorage.cpp
     Reconstruction/FeldkampCuda.cpp
     Utils/CudaPtxModule.cpp)
 endif()

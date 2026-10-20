@@ -12,7 +12,9 @@
 
 #include "Utils/CheckedSize.h"
 #include "Utils/Volume.h"
+#include "BufferStorage.h"
 #include "ExecutionContext.h"
+#include "CpuBufferStorage.h"
 
 namespace libcbct {
 
@@ -61,34 +63,71 @@ public:
         return std::is_same_v<std::remove_const_t<T>, float> ? BufferScalar::Float32 : BufferScalar::Complex64;
     }
     std::span<T> hostElements() const {
-        if (backend() != Backend::Cpu) {
+        if (!storage_ || backend() != Backend::Cpu) {
             throw InvalidArgument("Buffer is not host accessible");
         }
-        return storage_;
+
+        if (context_ != storage_->context()) {
+            throw InvalidArgument("Buffer context mismatch");
+        }
+
+        std::size_t count = 1;
+        for (auto extent : shape_) {
+            count = detail::checkedProduct(count, extent);
+        }
+
+        const auto bytes = detail::checkedProduct(count, sizeof(T));
+        const auto capacity = storage_->sizeBytes();
+
+        if (byteOffset_ > capacity || bytes > capacity - byteOffset_) {
+            throw InvalidArgument("Tensor view exceeds buffer capacity");
+        }
+
+        using ByteType = std::conditional_t<std::is_const_v<T>, const std::byte, std::byte>;
+        ByteType *base = nullptr;
+
+        if constexpr (std::is_const_v<T>) {
+            base = static_cast<const std::byte *>(storage_->hostDataConst());
+        } else {
+            base = static_cast<std::byte *>(storage_->hostData());
+        }
+
+        if (!base) {
+            throw InvalidArgument("Requested host access is unavailable");
+        }
+
+        auto *firstByte = base + byteOffset_;
+        if (reinterpret_cast<std::uintptr_t>(firstByte) % alignof(T) != 0) {
+            throw InvalidArgument("Tensor view is not properly aligned");
+        }
+
+        return std::span<T>(reinterpret_cast<T *>(firstByte), count);
     }
+
     TensorView<T, 2> slice(std::size_t index) const
         requires(Rank == 3)
     {
         if (index >= shape_[2]) {
             throw InvalidArgument("Tensor slice is out of range");
         }
-        const auto count = shape_[0] * shape_[1];
-        return TensorView<T, 2>(data_.subspan(index * count, count), { shape_[0], shape_[1] }, context_, owner_);
+        const auto sliceBytes = detail::checkedProduct(shape_[0], shape_[1], sizeof(T));
+        const auto offset = byteOffset_ + index * sliceBytes;
+        return TensorView<T, 2>(storage_, offset, { shape_[0], shape_[1] });
     }
 
     template <typename U, std::size_t OtherRank>
     bool overlaps(const TensorView<U, OtherRank> &other) const {
         const auto a = reinterpret_cast<std::uintptr_t>(hostElements().data());
         const auto b = reinterpret_cast<std::uintptr_t>(other.hostElements().data());
-        return a <= b ? b - a < data_.size_bytes() : a - b < other.data_.size_bytes();
+        return a <= b ? b - a < storage_->sizeBytes() : a - b < other.storage_->sizeBytes();
     }
 
 private:
-    TensorView(std::span<T> data, Shape shape, ExecutionContext context, std::shared_ptr<void> owner = {})
-        : data_(data)
+    TensorView(std::shared_ptr<detail::BufferStorage> storage, std::size_t byteOffset, Shape shape)
+        : storage_(std::move(storage))
+        , byteOffset_(byteOffset)
         , shape_(shape)
-        , context_(std::move(context))
-        , owner_(std::move(owner)) {
+        , context_(storage_->context()) {
     }
 
     std::shared_ptr<detail::BufferStorage> storage_;
@@ -99,8 +138,8 @@ private:
     template <typename U, std::size_t OtherRank>
         requires(TensorConcept<U, OtherRank>)
     friend class TensorView;
-
     friend class CpuExecutionSession;
+    friend class CudaExecutionSession;
 };
 
 using ProjectionView = TensorView<float, 2>;
@@ -137,28 +176,33 @@ public:
         requires(!std::is_const_v<T>)
     TensorView<T, Rank> allocate(std::array<std::size_t, Rank> shape) {
         const auto count = checkedCount<T>(shape);
-        auto storage = std::make_shared<std::vector<T>>(count);
+        auto storage = std::make_shared<detail::CpuBufferStorage<T>>(context_, count);
+
         ++statistics_.bufferAllocations;
         statistics_.bufferBytes += count * sizeof(T);
-        return TensorView<T, Rank>(std::span<T>(*storage), shape, context_, storage);
+
+        return TensorView<T, Rank>(std::move(storage), 0, shape);
     }
 
     template <typename T, std::size_t Rank>
-    TensorView<T, Rank> borrow(std::span<T> data, std::array<std::size_t, Rank> shape) const {
-        if (checkedCount<T>(shape) != data.size() || !data.data()) {
+    TensorView<T, Rank> makeView(std::span<T> data, std::array<std::size_t, Rank> shape) const {
+        const auto count = checkedCount<T>(shape);
+        if (count != data.size() || !data.data()) {
             throw InvalidArgument("Tensor storage does not match its shape");
         }
-        return TensorView<T, Rank>(data, shape, context_);
+
+        auto view = std::make_shared<detail::CpuBufferView<T>>(context_, data);
+        return TensorView<T, Rank>(std::move(view), 0, shape);
     }
     template <typename T>
-    TensorView<T, 3> borrow(Volume<T> &volume) const {
-        return borrow(volume.elements(),
-                      std::array{ volume.template size<0>(), volume.template size<1>(), volume.template size<2>() });
+    TensorView<T, 3> makeView(Volume<T> &volume) const {
+        return makeView(volume.elements(),
+                        std::array{ volume.template size<0>(), volume.template size<1>(), volume.template size<2>() });
     }
     template <typename T>
-    TensorView<const T, 3> borrow(const Volume<T> &volume) const {
-        return borrow(volume.elements(),
-                      std::array{ volume.template size<0>(), volume.template size<1>(), volume.template size<2>() });
+    TensorView<const T, 3> makeView(const Volume<T> &volume) const {
+        return makeView(volume.elements(),
+                        std::array{ volume.template size<0>(), volume.template size<1>(), volume.template size<2>() });
     }
 
 private:
@@ -177,6 +221,7 @@ private:
         }
         return count;
     }
+
     ExecutionContext context_;
     ExecutionStatistics statistics_;
 };

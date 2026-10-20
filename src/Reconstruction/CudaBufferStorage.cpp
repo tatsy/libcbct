@@ -2,9 +2,11 @@
 
 #include <cuda.h>
 
+#include "Execution.h"
+#include "ExecutionContext.h"
 #include "Utils/CheckedSize.h"
 
-namespace libcbct::detail {
+namespace libcbct {
 
 void checkDriver(CUresult result, std::string_view operation, const char *jitLog = "") {
     if (result == CUDA_SUCCESS) {
@@ -26,9 +28,9 @@ void checkDriver(CUresult result, std::string_view operation, const char *jitLog
 class CudaDeviceState final {
 public:
     static std::shared_ptr<CudaDeviceState> create(int deviceIndex) {
-        checkDriver(cuIUnit(), "cuInit");
+        checkDriver(cuInit(0), "cuInit");
 
-        auto state = std::make_shared<CudaDeviceState>();
+        auto state = std::shared_ptr<CudaDeviceState>(new CudaDeviceState());
 
         checkDriver(cuDeviceGet(&state->device_, deviceIndex), "cuDeviceGet");
 
@@ -60,12 +62,12 @@ private:
 class CudaBufferAccess final {
 public:
     template <typename T, std::size_t Rank>
-    static T *pointer(const TensorView<T, Rank> &view, const ExecitionContext &expectedContext) {
+    static T *pointer(const TensorView<T, Rank> &view, const ExecutionContext &expectedContext) {
         if (expectedContext.backend() != Backend::Cuda || view.context() != expectedContext) {
             throw InvalidArgument("CUDA execution context mismatch");
         }
 
-        auto *storage = dynamic_cast<CudaBufferStorage *>(view.storage_.get());
+        auto *storage = dynamic_cast<detail::CudaBufferStorage *>(view.storage_.get());
 
         if (!storage || storage->context() != expectedContext) {
             throw InvalidArgument("Buffer is not CUDA storage");
@@ -92,4 +94,4 @@ public:
     }
 };
 
-}  // namespace libcbct::detail
+}  // namespace libcbct

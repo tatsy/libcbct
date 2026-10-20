@@ -57,7 +57,7 @@ VolumeF32 Feldkamp::reconstruct(const VolumeF32 &sinogram, const Geometry &geome
     auto padded = session.allocate<float>(std::array{ paddedWidth, height });
     auto filtered = session.allocate<float>(std::array{ width, height });
     VolumeF32 volume(geometry.volSize.x, geometry.volSize.y, geometry.volSize.z);
-    detail::executeFdk(session.borrow(sinogram), padded, filtered, session.borrow(volume), weight, filter,
+    detail::executeFdk(session.makeView(sinogram), padded, filtered, session.makeView(volume), weight, filter,
                        backprojection);
     return volume;
 }

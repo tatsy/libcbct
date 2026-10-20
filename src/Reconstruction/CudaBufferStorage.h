@@ -5,15 +5,19 @@
 #ifndef LIBCBCT_CUDA_BUFFER_STORAGE_H
 #define LIBCBCT_CUDA_BUFFER_STORAGE_H
 
+#include <cuda.h>
+
 #include <cstddef>
 #include <memory>
 
 #include "BufferStorage.h"
 
-namespace libcbct::detail {
+namespace libcbct {
 
 class CudaDeviceState;
 class CudaBufferAccess;
+
+namespace detail {
 
 class CudaBufferStorage : public BufferStorage {
 public:
@@ -21,12 +25,14 @@ public:
     ~CudaBufferStorage() override;
 
 private:
-    std::shared_ptr<CudaDeviceState> device_;
+    std::shared_ptr<CudaDeviceState> device_ = nullptr;
     CUdeviceptr address_ = 0;
 
     friend class CudaBufferAccess;
 };
 
-}  // namespace libcbct::detail
+}  // namespace detail
+
+}  // namespace libcbct
 
 #endif  // LIBCBCT_CUDA_BUFFER_STORAGE_H

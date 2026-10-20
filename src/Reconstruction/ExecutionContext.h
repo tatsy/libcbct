@@ -13,11 +13,16 @@ enum class Backend { Cpu, Cuda, Vulkan };
 enum class BufferLayout { XContiguous };
 enum class BufferScalar { Float32, Complex64 };
 
+class CpuExecutionSession;
+class CudaExecutionSession;
+
 namespace detail {
 
 struct ExecutionContextState {
     Backend backend;
 };
+
+}  // namespace detail
 
 // An identity, not a native device handle. Views keep their context alive.
 class ExecutionContext {
@@ -31,11 +36,12 @@ private:
     explicit ExecutionContext(Backend backend)
         : state_(std::make_shared<detail::ExecutionContextState>(backend)) {
     }
-    std::shared_ptr<const detail::ExecutionContextState> state_;
-    friend class CpuExecutionSession;
-};
 
-}  // namespace detail
+    std::shared_ptr<const detail::ExecutionContextState> state_;
+
+    friend class CpuExecutionSession;
+    friend class CudaExecutionSession;
+};
 
 }  // namespace libcbct
 
