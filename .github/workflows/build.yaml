@@ -74,6 +74,8 @@ jobs:
           SELECTED_CXX: ${{ steps.compiler.outputs.cxx }}
           # OpenCV's Objective-C++ compiler detection also honors CXX.
           CXX: ${{ steps.compiler.outputs.cxx }}
+          # Keep cascading GCC diagnostics small enough to inspect in CI logs.
+          CXXFLAGS: ${{ runner.os == 'macOS' && matrix.compiler == 'gcc' && '-fmax-errors=5' || '' }}
           # Homebrew OpenCV uses libc++; GCC needs dependencies built with libstdc++.
           OPENCV_FROM_SOURCE: ${{ runner.os == 'macOS' && matrix.compiler == 'gcc' && 'ON' || 'OFF' }}
         run: >-
