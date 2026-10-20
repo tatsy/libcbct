@@ -14,9 +14,12 @@ set(LIBCBCT_HEADERS
   IO/BaseImporter.h
   IO/ImageSequenceImporter.h
   IO/RawVolumeExporter.h
+  Reconstruction/BufferStorage.h
+  Reconstruction/CpuBufferStorage.h
   Reconstruction/FeldkampCpu.h
   Reconstruction/Feldkamp.h
   Reconstruction/Execution.h
+  Reconstruction/ExecutionContext.h
   Reconstruction/Operators.h
   Reconstruction/CpuOperators.h
   Reconstruction/detail/FdkRecipe.h
@@ -46,16 +49,30 @@ set(LIBCBCT_SOURCES
 )
 
 if (LIBCBCT_WITH_CUDA)
-  list(APPEND LIBCBCT_HEADERS Reconstruction/FeldkampCuda.h
-    Reconstruction/Slang/FdkCudaParameters.h Utils/DeviceBuffer.h Utils/CudaPtxModule.h)
-  list(APPEND LIBCBCT_SOURCES Reconstruction/FeldkampCuda.cpp Utils/CudaPtxModule.cpp)
+  list(APPEND LIBCBCT_HEADERS
+    Reconstruction/CudaOperators.h
+    Reconstruction/FeldkampCuda.h
+    Reconstruction/Slang/FdkCudaParameters.h
+    Utils/DeviceBuffer.h
+    Utils/CudaPtxModule.h)
+  list(APPEND LIBCBCT_SOURCES
+    Reconstruction/CudaOperators.cpp
+    Reconstruction/FeldkampCuda.cpp
+    Utils/CudaPtxModule.cpp)
 endif()
 
 if (LIBCBCT_WITH_VULKAN)
-  list(APPEND LIBCBCT_HEADERS Utils/VulkanCompute.h Utils/SlangSpirvKernel.h Utils/VulkanFft.h
+  list(APPEND LIBCBCT_HEADERS
+    Utils/VulkanCompute.h
+    Utils/SlangSpirvKernel.h
+    Utils/VulkanFft.h
     Reconstruction/FeldkampVulkan.h)
-  list(APPEND LIBCBCT_SOURCES Utils/VulkanCompute.cpp Utils/SlangSpirvKernel.cpp Utils/VulkanFft.cpp
+  list(APPEND LIBCBCT_SOURCES
+    Utils/VulkanCompute.cpp
+    Utils/SlangSpirvKernel.cpp
+    Utils/VulkanFft.cpp
     Reconstruction/FeldkampVulkan.cpp)
+
   # Compile VMA in one translation unit, reusable by the library and Vulkan tests.
   add_library(cbct_vma STATIC Utils/VulkanMemoryAllocator.cpp)
   target_link_libraries(cbct_vma PUBLIC Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)

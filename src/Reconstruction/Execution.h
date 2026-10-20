@@ -12,36 +12,11 @@
 
 #include "Utils/CheckedSize.h"
 #include "Utils/Volume.h"
+#include "ExecutionContext.h"
 
 namespace libcbct {
 
-enum class Backend { Cpu, Cuda, Vulkan };
-enum class BufferLayout { XContiguous };
-enum class BufferScalar { Float32, Complex64 };
-
-namespace detail {
-struct ExecutionContextState {
-    Backend backend;
-};
-}  // namespace detail
-
 class CpuExecutionSession;
-
-// An identity, not a native device handle. Views keep their context alive.
-class ExecutionContext {
-public:
-    Backend backend() const noexcept {
-        return state_->backend;
-    }
-    bool operator==(const ExecutionContext &) const = default;
-
-private:
-    explicit ExecutionContext(Backend backend)
-        : state_(std::make_shared<detail::ExecutionContextState>(backend)) {
-    }
-    std::shared_ptr<const detail::ExecutionContextState> state_;
-    friend class CpuExecutionSession;
-};
 
 template <typename T, std::size_t Rank>
 concept TensorConcept =
@@ -60,13 +35,14 @@ template <typename T, std::size_t Rank>
 class TensorView {
 public:
     using Shape = std::array<std::size_t, Rank>;
+
     template <typename U>
         requires(std::is_const_v<T> && std::is_same_v<U, std::remove_const_t<T>>)
     TensorView(const TensorView<U, Rank> &other)
-        : data_(other.data_)
+        : storage_(other.storage_)
+        , byteOffset_(other.byteOffset_)
         , shape_(other.shape_)
-        , context_(other.context_)
-        , owner_(other.owner_) {
+        , context_(other.context_) {
     }
 
     const Shape &shape() const noexcept {
@@ -88,7 +64,7 @@ public:
         if (backend() != Backend::Cpu) {
             throw InvalidArgument("Buffer is not host accessible");
         }
-        return data_;
+        return storage_;
     }
     TensorView<T, 2> slice(std::size_t index) const
         requires(Rank == 3)
@@ -114,10 +90,11 @@ private:
         , context_(std::move(context))
         , owner_(std::move(owner)) {
     }
-    std::span<T> data_;
+
+    std::shared_ptr<detail::BufferStorage> storage_;
+    std::size_t byteOffset_ = 0;
     Shape shape_;
     ExecutionContext context_;
-    std::shared_ptr<void> owner_;
 
     template <typename U, std::size_t OtherRank>
         requires(TensorConcept<U, OtherRank>)
